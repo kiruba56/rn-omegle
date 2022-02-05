@@ -58,3 +58,8 @@ buck-out/
 
 # CocoaPods
 /ios/Pods/
+
+vendor/
+Gemfile
+Gemfile.lock
+# .ruby-version
