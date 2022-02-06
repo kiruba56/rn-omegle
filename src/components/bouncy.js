@@ -7,7 +7,7 @@ import Animated, { useSharedValue, useAnimatedStyle,withSpring } from 'react-nat
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const Bouncy = ({children,onPress,hitSlop={}}) => {
+const Bouncy = ({children,onPress,hitSlop={},style={}}) => {
     const offset = useSharedValue(1);
 
     const animated_styles = useAnimatedStyle(() => {
@@ -34,7 +34,7 @@ const Bouncy = ({children,onPress,hitSlop={}}) => {
     }
  
    return(
-    <AnimatedPressable  hitSlop={hitSlop} onPressIn={on_in} onPress={onPress}  onPressOut={on_out} style={[animated_styles]}>
+    <AnimatedPressable hitSlop={hitSlop} onPressIn={on_in} onPress={onPress}  onPressOut={on_out} style={[animated_styles,...style]}>
         {children}
     </AnimatedPressable>
    );
