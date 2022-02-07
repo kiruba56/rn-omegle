@@ -1,7 +1,22 @@
 import axios from 'axios';
 import qs from 'querystring';
+import EventEmitter from 'events';
 
-class Omegle {
+const events = [
+    // status events
+    'waiting','connected','statusInfo','count',
+    // error events -> handle all these error in app
+    'error','connectionDied','antinudeBanned',
+    // recaptcha
+    'recaptchaRequired','recaptchaRejected',
+    // chat
+    'typing', 'stoppedTyping', 'gotMessage', 'strangerDisconnected',
+    //webrtc
+    'rtccall','icecandidate','rtcpeerdescription'
+
+]
+
+class Omegle extends EventEmitter{
     constructor(){
         this._agent_ = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
         this._language_ = 'en';
@@ -69,9 +84,11 @@ class Omegle {
                 const data = await this.request('status',{nocache:Math.random(),randid:this.random()},'GET');
                 if(data&&data.server){
                     if(data.force_unmon){
-                        return reject("ip_banned");
+                        this.emit("ip_banned");
                     };
-                    this._url_ = data.server[0]+'.omegle.com';
+                    if(data.servers&&data.servers.length>0){
+                        this._url_ = data.servers[0]+'.omegle.com';
+                    };
                     this._total_users_ = data.count;
                     return resolve();
                 };
@@ -218,8 +235,40 @@ class Omegle {
         });
     };  
 
-    on_events = (ev) => {
+    on_events = (event=[]) => {
+        if(!event||(event&&event.length===0)){
+            return false;
+        };
+        event.map(v=>{
+            const [name, payload] =  [v[0],v[1]||null];
+            this.handle_event(name,payload);
+            events.includes(name)&&this.emit(name,payload);
+        });
+    };
 
+    handle_event = (name,payload) => {
+        switch(name){
+            case 'connected':
+                return this._is_connected_ = true;
+            case 'statusInfo':
+                return this._event_staus_info(payload);
+            case 'count':
+                return this._total_users_ = payload;
+            case 'strangerDisconnected':
+                return this.reset();
+            default:
+               break;
+        };
+    };
+
+    _event_staus_info = (payload) => {
+        if(payload.force_unmon){
+            this.emit("ip_banned");
+        };
+        if(payload.servers&&payload.servers.length>0){
+            this._url_ = payload.servers[0]+'.omegle.com';
+        };
+        this._total_users_ = payload.count;
     };
 
     disconnect = () => {
@@ -244,12 +293,14 @@ class Omegle {
     }
 
     random = () => {
-       return Math.random().toString(36).substring(2,8).toUpperCase();
+        const len = 8;
+        const p = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjklmnpqrstuvwxyz123456789";
+        return [...Array(len)].reduce(a=>a+p[~~(Math.random()*p.length)],'');
     };
 
     is_connected = () => {
         return this._is_connected_;
     };
 
-
 };
+
