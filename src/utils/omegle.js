@@ -12,13 +12,14 @@ const events = [
     // chat
     'typing', 'stoppedTyping', 'gotMessage', 'strangerDisconnected',
     //webrtc
-    'rtccall','icecandidate','rtcpeerdescription'
+    // 'rtccall','icecandidate','rtcpeerdescription'
 
 ]
 
 class Omegle extends EventEmitter{
     constructor(){
-        this._agent_ = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
+        super();
+        this._user_agent_ = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
         this._language_ = 'en';
         this._url_ = 'front1.omegle.com';
 
@@ -32,6 +33,10 @@ class Omegle extends EventEmitter{
 
         this._total_users_ = null;
 
+
+        this._has_rtc_call_happened_ = false;
+        this._tmp_icecandidate_ = [];
+
     };
 
 
@@ -41,7 +46,7 @@ class Omegle extends EventEmitter{
         return {
             url:`https://${this._url_}/${path}`,
             header:{
-                'User-Agent': this._agent_,
+                'User-Agent': this._user_agent_,
                 'Connection': 'keep-alive',
                 'Accept-Language': 'en-US;q=0.6,en;q=0.4',
                 'Referer': 'http://www.omegle.com',
@@ -51,18 +56,20 @@ class Omegle extends EventEmitter{
                 'Accept-Encoding': 'gzip,deflate',
                 'Accept': 'application/json',
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': is_qs?stringified_data.length:0,
-                [is_qs?'params':'data']:is_qs?data:typeof data === 'string'?data:stringified_data
+                'Content-Length': !is_qs?stringified_data.length:0,
             },
+            [is_qs?'params':'data']:is_qs?data:stringified_data,
             method:method
         }
     };
 
     request = (path,data,method="POST") => {
+        console.log("path=>",path)
         return new Promise(async(resolve,reject)=>{
             try{
                 const option = this.get_request_option(path,data,method);
                 const response = await axios(option);
+                path==='start'&&console.log(response.data)
                 if(response.status===200){
                     !this._servers_.includes(this._url_)&&this._servers_.push(this._url_);
                     return resolve(response.data);
@@ -82,7 +89,7 @@ class Omegle extends EventEmitter{
         return new Promise(async(resolve,reject)=>{
             try{
                 const data = await this.request('status',{nocache:Math.random(),randid:this.random()},'GET');
-                if(data&&data.server){
+                if(data&&data.servers){
                     if(data.force_unmon){
                         this.emit("ip_banned");
                     };
@@ -92,9 +99,9 @@ class Omegle extends EventEmitter{
                     this._total_users_ = data.count;
                     return resolve();
                 };
-                throw new Error(`Error in setup_server ${data}`);
+                throw new Error(`Error in setup_server ${JSON.stringify(data)}`);
             }catch(e){
-                console.log("Error in setup_server inside Omegle class.", e);
+                console.log("Error in setup_server inside Omegle class.", JSON.stringify(e));
                 if(this._servers_.length>0){
                     this._url_ = this._servers_[this._servers_.length-1];
                 };
@@ -105,13 +112,13 @@ class Omegle extends EventEmitter{
 
     start = (camera="FaceTime HD Camera",topics=[],unmointered=false) => {
         // group = unmon for unmonitered section
+        let data = {rcs:1,firstevents:1,lang:this._language_,randid:this.random(),spid:'',webrtc:1,caps:'recaptcha2,t',camera,topics};
         return new Promise(async(resolve,reject)=>{
             try{
                 await this.setup_server();
-                let data = {rcs:1,firstevents:1,lang:this._language_,randid:this.random(),spid:'',webrtc:1,caps:'recaptcha2,t',camera};
-                if(topics.length>0){
-                    data['topics'] = topics;
-                };
+                // if(topics.length>0){
+                //     data['topics'] = topics;
+                // };
                 if(unmointered){
                     data['group'] = 'unmon';
                 };
@@ -119,11 +126,12 @@ class Omegle extends EventEmitter{
                 if(response&&response.clientID){
                     this._client_id_ = response.clientID;
                     this.on_events(response.events);
+                    this.poll();
                     return resolve(this._client_id_);
                 };  
-                throw new Error(`Error in start Omegle response ${e}`);
+                throw new Error(`Error in start Omegle response ${response} ${data} ${camera}`);
             }catch(e){
-                console.log("Error in connect inside omegle class.",e);
+                console.log("Error in connect inside omegle class.",e, data);
                 reject(e);
             };
         });
@@ -131,12 +139,14 @@ class Omegle extends EventEmitter{
 
     poll = async() => {
         try{
-            if(!this._client_id_||!this.is_connected){
+            if(!this._client_id_){
+                console.log("returned on poll")
                 return false;
             };
-            const events = await this.request('events',{id:this.id});
+            const events = await this.request('events',{id:this._client_id_});
             this.on_events(events);
-            this._client_id_&&this._is_connected_&&this.poll();
+            // console.log(this._client_id_)
+            this.poll();
         }catch(e){
             console.log("Error in poll inside Omegle Class",e);
             this._client_id_&&this._is_connected_&&this.poll();
@@ -242,12 +252,22 @@ class Omegle extends EventEmitter{
         event.map(v=>{
             const [name, payload] =  [v[0],v[1]||null];
             this.handle_event(name,payload);
+            console.log("e=>",name);
+            if(name==="error"){
+                console.log(payload);
+            };
             events.includes(name)&&this.emit(name,payload);
         });
     };
 
     handle_event = (name,payload) => {
         switch(name){
+            case 'rtcpeerdescription':
+                return this._event_rtcpeerdescription(payload);
+            case 'icecandidate':
+                return this._event_icecandidate(payload);
+            case 'rtccall':
+                return this._event_rtccall();
             case 'connected':
                 return this._is_connected_ = true;
             case 'statusInfo':
@@ -259,6 +279,27 @@ class Omegle extends EventEmitter{
             default:
                break;
         };
+    };
+
+    _event_rtcpeerdescription = (desc) => {
+        this.emit('rtcpeerdescription',desc,this._tmp_icecandidate_);
+        // setTimeout(()=>{
+        // this.emit('add_icecandidate',this._tmp_icecandidate_);
+        // },500);
+        this._has_rtc_call_happened_ = true;
+    };
+
+    _event_icecandidate = (ice) => {
+        this._tmp_icecandidate_.push(ice);
+        if(this._has_rtc_call_happened_){
+            this.emit('add_icecandidate',[ice]);
+        };
+        // add icecandidate
+    };
+
+    _event_rtccall = () => {
+        this._has_rtc_call_happened_ = true;
+        this.emit('rtccall');
     };
 
     _event_staus_info = (payload) => {
@@ -290,11 +331,13 @@ class Omegle extends EventEmitter{
         this._is_connected_ = false;
         this._challenge_ = null;
         this._client_id_ = null;
+        this._has_rtc_call_happened_ = false;
+        this._tmp_icecandidate_ = []
     }
 
     random = () => {
         const len = 8;
-        const p = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjklmnpqrstuvwxyz123456789";
+        const p = "ABCDEFGHJKLMNPQRSTUVWXYZ123456789";
         return [...Array(len)].reduce(a=>a+p[~~(Math.random()*p.length)],'');
     };
 
@@ -304,3 +347,4 @@ class Omegle extends EventEmitter{
 
 };
 
+export default Omegle;
