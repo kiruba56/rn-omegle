@@ -31,10 +31,7 @@ Navigation.events().registerAppLaunchedListener(() => {
 
 
 Navigation.setLazyComponentRegistrator((componentName) => {
-  // if(componentName===user_name){
-  // }else {
-    
-  // }
+
 });
 
 

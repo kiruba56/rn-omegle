@@ -1,13 +1,12 @@
-
 import React from 'react';
 import {Pressable} from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle,withSpring } from 'react-native-reanimated';
-
-
+import { hp, wp } from '../utils/responsive';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const default_hitslop = {top:hp(2),bottom:hp(2),left:wp(5),right:wp(5)}
 
-const Bouncy = ({children,onPress,hitSlop={},style={}}) => {
+const Bouncy = ({children,onPress,hitSlop=default_hitslop,style={}}) => {
     const offset = useSharedValue(1);
 
     const animated_styles = useAnimatedStyle(() => {
@@ -16,6 +15,7 @@ const Bouncy = ({children,onPress,hitSlop={},style={}}) => {
         };
     });
 
+    
 
 
     const on_in = () =>  {
@@ -34,7 +34,7 @@ const Bouncy = ({children,onPress,hitSlop={},style={}}) => {
     }
  
    return(
-    <AnimatedPressable hitSlop={hitSlop} onPressIn={on_in} onPress={onPress}  onPressOut={on_out} style={[animated_styles,...style]}>
+    <AnimatedPressable hitSlop={hitSlop} onPressIn={on_in} onPress={onPress}  onPressOut={on_out} style={[animated_styles,style]}>
         {children}
     </AnimatedPressable>
    );
