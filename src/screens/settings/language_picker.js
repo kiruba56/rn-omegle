@@ -5,7 +5,7 @@ import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
 import ScrollBottomSheet from 'react-native-scroll-bottom-sheet';
 import { hp, wp } from '../../utils/responsive';
-import PanelHader from './_panel_header';
+import PanelHeader from './_panel_header';
 import { Navigation } from 'react-native-navigation';
 import languages from '../../utils/language_list.json';
 import fonts from '../../theme/fonts';
@@ -35,7 +35,7 @@ const LanguagePicker = ({componentId,selected={id:'en'}}) => {
     }, []);
 
 
-    const _render_handle_ = () => <PanelHader title={'Preferred language'}/>;
+    const _render_handle_ = () => <PanelHeader title={'Preferred language'}/>;
 
     const _on_settle_ = (index) => {
         if(index===1){

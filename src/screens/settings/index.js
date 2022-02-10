@@ -10,8 +10,8 @@ import fonts from '../../theme/fonts';
 import { useSelector,useDispatch } from 'react-redux';
 import Switch from 'react-native-ui-lib/switch';
 import { change_user_preference } from '../../db/redux/types';
-import PanelHader from './_panel_header';
-import { language_picker } from '../../navigations/constant';
+import PanelHeader from './_panel_header';
+import { language_picker, topic_picker } from '../../navigations/constant';
 import { open_sheet } from '../../navigations/flow/sheet';
 
 const snap_points= [hp(20),hp(40), hp(110)];
@@ -36,12 +36,14 @@ const setting_fields = [
         id:'topics',
         title:'Interested topics',
         description:'Adding topics will let you discover people with the same topics.',
+        push:topic_picker
     },
     {
         id:'language',
         title:'Preferred language',
         description:'The language in which you prefer to chat. You can update this anytime.',
-        style:{borderBottomWidth:0}
+        style:{borderBottomWidth:0},
+        push:language_picker
     }
 ];
 
@@ -71,10 +73,8 @@ const Settings = ({componentId}) =>{
           }
     };
 
-    const _on_press_field_ = (id)=>{
-        if(id==='language'){
-            open_sheet(language_picker,{selected:user[id]},'_end');
-        };
+    const _on_press_field_ = (id,to)=>{
+        open_sheet(to,{selected:user[id]},'_end');
     };
 
     const _on_change_value_ = (field,value)=>{
@@ -86,7 +86,7 @@ const Settings = ({componentId}) =>{
         return true;
     };
 
-    const _render_handle_ = () => <PanelHader title={'Settings'}/>
+    const _render_handle_ = () => <PanelHeader title={'Settings'}/>
 
     const _render_fields_ = item => {
         return <Field {...item} key={item.id} value={user[item.id]} onChange={_on_change_value_} onPress={_on_press_field_}/>
@@ -113,7 +113,7 @@ const are_equal_values = (p,n) => {
 }
 
 
-const Field = memo(({id,title,description,value,type,style,onChange,onPress}) => {
+const Field = memo(({id,title,description,value,type,style,onChange,onPress,push}) => {
 
     // const [_value_,_change_values_] = type==='switch'&&useState(value)||[];
 
@@ -136,7 +136,7 @@ const Field = memo(({id,title,description,value,type,style,onChange,onPress}) =>
         if(type==='switch'){
             return onChange&&onChange(id,!value);
         };
-        onPress&&onPress(id);
+        push&&onPress&&onPress(id,push);
         // type==='switch'&&_change_values_(!_value_);
     };
     return (

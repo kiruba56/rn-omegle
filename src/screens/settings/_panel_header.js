@@ -4,7 +4,7 @@ import colors from '../../theme/colors';
 import fonts from '../../theme/fonts';
 import { hp, wp } from '../../utils/responsive';
 
-const PanelHader = ({title}) => {
+const PanelHeader = ({title}) => {
    return (
         <View  style={styles.header}>
             <View style={styles.panel_handle} />
@@ -42,4 +42,4 @@ const styles = StyleSheet.create({
    
 });
 
-export default PanelHader;
+export default PanelHeader;
