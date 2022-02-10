@@ -21,6 +21,7 @@
     "react-native-mmkv": "^2.0.1",
     "react-native-navigation": "^7.24.3-hotfix.1",
     "react-native-reanimated": "2.3.0",
+    "react-native-scroll-bottom-sheet": "^0.7.0",
     "react-native-ui-lib": "^6.9.0",
     "react-native-webrtc": "^1.94.1",
     "react-redux": "^7.2.6",

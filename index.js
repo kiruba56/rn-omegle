@@ -6,9 +6,10 @@ import root from './src/navigations/root';
 import {persistStore} from 'redux-persist';
 import { Provider } from 'react-redux';
 import configure_store from './src/db/redux/config_store';
+import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
 
 
-import { home_screen } from './src/navigations/constant';
+import { home_screen, settings_screen } from './src/navigations/constant';
 
 Navigation.registerComponent(home_screen, () => wrapper(require('./src/screens/home').default));
 
@@ -24,14 +25,16 @@ const store = configure_store();
 
 
 Navigation.events().registerAppLaunchedListener(() => {
-  persistStore(store,null,()=>{
+ persistStore(store,null,()=>{
        root();
   });
 });
 
 
 Navigation.setLazyComponentRegistrator((componentName) => {
-
+    if(componentName===settings_screen){
+        Navigation.registerComponent(settings_screen,()=>gestureHandlerRootHOC(wrapper(require('./src/screens/settings').default)));
+    };
 });
 
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import {View,Text,StyleSheet,Image} from 'react-native';
 import Bouncy from '../../components/bouncy';
+import { to_settings } from '../../navigations/flow/settings';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
 import fonts from '../../theme/fonts';
@@ -17,7 +18,7 @@ const Home = () => {
                     </View> 
                     <Text style={styles.sub_title}>Tap to start a conversation</Text>
             </View>
-            <Bouncy style={styles.settings_container}>
+            <Bouncy onPress={to_settings} style={styles.settings_container}>
                 <Image resizeMode="contain" style={styles.settings} source={require('../../assets/icons/cog.png')}/>
             </Bouncy>
         </View>

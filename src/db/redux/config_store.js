@@ -28,7 +28,7 @@ const persist_config = {
     version:1,
     key: 'root',
     storage:redux_storage,
-    // blacklist:['app']
+    whitelist:['app']
 };
 
 
