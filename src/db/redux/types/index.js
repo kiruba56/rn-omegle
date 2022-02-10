@@ -1,0 +1,1 @@
+export const change_user_preference = 'change-user-preference';

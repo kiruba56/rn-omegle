@@ -1,7 +1,7 @@
+import { change_user_preference } from "../types";
 
 const _initial_state_ = {
     user:{
-        name:null,
         topics:[],
         language:{id:'en',name:'English'},
         unmoderated:false,
@@ -11,6 +11,14 @@ const _initial_state_ = {
 
 export default (state=_initial_state_,action) => {
     switch(action.type){
+        case change_user_preference:
+            return{
+                ...state,
+                user:{
+                    ...state.user,
+                    [action.payload.field]:action.payload.value
+                }
+            }
         default:
             return state;
     };

@@ -1,5 +1,5 @@
-import React,{useRef,useEffect,memo, useState} from 'react';
-import {View,StyleSheet,BackHandler,TouchableOpacity,Text,Image} from 'react-native';
+import React,{useRef,useEffect,memo} from 'react';
+import {View,StyleSheet,BackHandler,Text,Image,TouchableOpacity} from 'react-native';
 import Animated, { Layout } from 'react-native-reanimated';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
@@ -7,8 +7,9 @@ import ScrollBottomSheet from 'react-native-scroll-bottom-sheet';
 import { hp, wp } from '../../utils/responsive';
 import { Navigation } from 'react-native-navigation';
 import fonts from '../../theme/fonts';
-import { useSelector } from 'react-redux';
+import { useSelector,useDispatch } from 'react-redux';
 import Switch from 'react-native-ui-lib/switch';
+import { change_user_preference } from '../../db/redux/types';
 
 const snap_points= [hp(10),hp(40), hp(100)];
 const option_hitslip = {top:hp(2),bottom:hp(2)}
@@ -48,7 +49,7 @@ const Settings = ({componentId}) =>{
     const _delta_ = new Animated.Value(1);
 
     const user = useSelector(state=>state.app.user);
-
+    const dispatch = useDispatch()
 
     useEffect(() => {
         // custom backhandler to support dismissing the model after closing the bottomsheet
@@ -66,6 +67,10 @@ const Settings = ({componentId}) =>{
           }
     };
 
+    const _on_change_value_ = (field,value)=>{
+        dispatch({type:change_user_preference,payload:{field,value}});
+    };
+
     const _close_ = () => {
         Navigation.dismissModal(componentId);
         return true;
@@ -79,7 +84,7 @@ const Settings = ({componentId}) =>{
     );
 
     const _render_fields_ = item => {
-        return <Field {...item} key={item.id} value={user[item.id]}/>
+        return <Field {...item} key={item.id} value={user[item.id]} onChange={_on_change_value_}/>
     };
 
     return (
@@ -103,9 +108,9 @@ const are_equal_values = (p,n) => {
 }
 
 
-const Field = memo(({id,title,description,value,type,style}) => {
+const Field = memo(({id,title,description,value,type,style,onChange}) => {
 
-    const [_value_,_change_values_] = type==='switch'&&useState(value)||[];
+    // const [_value_,_change_values_] = type==='switch'&&useState(value)||[];
 
     const _render_value_ = () => {
         if(id==='language'){
@@ -123,19 +128,23 @@ const Field = memo(({id,title,description,value,type,style}) => {
     };
 
     const _on_press_ = () => {
-        
-        type==='switch'&&_change_values_(!_value_);
+            if(type==='switch'){
+                return onChange(id,!value);
+            }
+       
+        // type==='switch'&&_change_values_(!_value_);
     };
-
     return (
         <Animated.View layout={animation} style={[styles.field,style]}>
             <TouchableOpacity onPress={_on_press_} hitSlop={option_hitslip}>
-                <View style={styles.row_aligned_center}>
-                    <Text style={styles.title}>{title}</Text>
-                    {type==="switch"?<Switch offColor={colors.grey} onValueChange={_on_press_}  onColor={colors.primary} value={_value_}/>:<Image resizeMode="contain" style={styles.next_icon}  source={require('../../assets/icons/next.png')}/>}
-                </View>
-                <Text style={styles.description}>{description}</Text>
-                {_render_value_()}
+                <>
+                    <View style={styles.row_aligned_center}>
+                        <Text style={styles.title}>{title}</Text>
+                        {type==="switch"?<Switch offColor={colors.grey} onValueChange={_on_press_}  onColor={colors.primary} value={value}/>:<Image resizeMode="contain" style={styles.next_icon}  source={require('../../assets/icons/next.png')}/>}
+                    </View>
+                    <Text style={styles.description}>{description}</Text>
+                    {_render_value_()}
+                </>
             </TouchableOpacity>
         </Animated.View>
     )
