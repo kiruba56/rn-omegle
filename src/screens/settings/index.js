@@ -10,8 +10,11 @@ import fonts from '../../theme/fonts';
 import { useSelector,useDispatch } from 'react-redux';
 import Switch from 'react-native-ui-lib/switch';
 import { change_user_preference } from '../../db/redux/types';
+import PanelHader from './_panel_header';
+import { language_picker } from '../../navigations/constant';
+import { open_sheet } from '../../navigations/flow/sheet';
 
-const snap_points= [hp(10),hp(40), hp(100)];
+const snap_points= [hp(20),hp(40), hp(110)];
 const option_hitslip = {top:hp(2),bottom:hp(2)}
 const animation = Layout.springify().damping(20).mass(1.2);
 
@@ -36,7 +39,7 @@ const setting_fields = [
     },
     {
         id:'language',
-        title:'Perfered language',
+        title:'Preferred language',
         description:'The language in which you prefer to chat. You can update this anytime.',
         style:{borderBottomWidth:0}
     }
@@ -50,6 +53,7 @@ const Settings = ({componentId}) =>{
 
     const user = useSelector(state=>state.app.user);
     const dispatch = useDispatch()
+
 
     useEffect(() => {
         // custom backhandler to support dismissing the model after closing the bottomsheet
@@ -67,6 +71,12 @@ const Settings = ({componentId}) =>{
           }
     };
 
+    const _on_press_field_ = (id)=>{
+        if(id==='language'){
+            open_sheet(language_picker,{selected:user[id]},'_end');
+        };
+    };
+
     const _on_change_value_ = (field,value)=>{
         dispatch({type:change_user_preference,payload:{field,value}});
     };
@@ -76,25 +86,20 @@ const Settings = ({componentId}) =>{
         return true;
     };
 
-    const _render_handle_ = () => (
-        <View style={styles.header}>
-            <View style={styles.panel_handle} />
-            <Text style={styles.screen_title}>Settings</Text>
-        </View>
-    );
+    const _render_handle_ = () => <PanelHader title={'Settings'}/>
 
     const _render_fields_ = item => {
-        return <Field {...item} key={item.id} value={user[item.id]} onChange={_on_change_value_}/>
+        return <Field {...item} key={item.id} value={user[item.id]} onChange={_on_change_value_} onPress={_on_press_field_}/>
     };
 
     return (
         <View style={[default_styles.flex]}>
             <Animated.View nativeID="background" style={[styles.background_fill,{opacity: _delta_.interpolate({inputRange:[0,1],outputRange:[0,.4]})}]} />
-            <View nativeID="sheet" style={default_styles.flex}>
+            <Animated.View nativeID="sheet" style={[default_styles.flex]}>
                 <ScrollBottomSheet innerRef={_set_inner_ref_} ref={_sheet_ref_} showsVerticalScrollIndicator={false} componentType="ScrollView" snapPoints={snap_points} initialSnapIndex={1} onSettle={_on_settle_} animatedPosition={_delta_} renderHandle={_render_handle_} contentContainerStyle={styles.content_container}>
                      {setting_fields.map(_render_fields_)}
                 </ScrollBottomSheet>
-            </View>
+            </Animated.View>
         </View>
     );
 };
@@ -108,7 +113,7 @@ const are_equal_values = (p,n) => {
 }
 
 
-const Field = memo(({id,title,description,value,type,style,onChange}) => {
+const Field = memo(({id,title,description,value,type,style,onChange,onPress}) => {
 
     // const [_value_,_change_values_] = type==='switch'&&useState(value)||[];
 
@@ -128,10 +133,10 @@ const Field = memo(({id,title,description,value,type,style,onChange}) => {
     };
 
     const _on_press_ = () => {
-            if(type==='switch'){
-                return onChange(id,!value);
-            }
-       
+        if(type==='switch'){
+            return onChange&&onChange(id,!value);
+        };
+        onPress&&onPress(id);
         // type==='switch'&&_change_values_(!_value_);
     };
     return (
@@ -161,32 +166,14 @@ const styles = StyleSheet.create({
         padding: wp(4),
         paddingTop:wp(8),
         backgroundColor: colors.bg,
-        paddingBottom:hp(5)
+        paddingBottom:hp(5),
+        transform:[
+            {
+                translateX:0
+            }
+        ]
     },
-    header: {
-        backgroundColor: colors.bg,
-        paddingVertical: hp(1),
-        borderTopLeftRadius: wp(5.5),
-        borderTopRightRadius: wp(5.5),
-        elevation:1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderBottomWidth:hp(.15),
-        borderColor:colors.grey
-    },
-    screen_title:{
-        fontFamily:fonts.title_text,
-        color:colors.black,
-        fontSize:wp(4),
-        lineHeight:wp(4)
-    },  
-    panel_handle: {
-        width: wp(10),
-        height: hp(.4),
-        marginBottom:hp(1),
-        backgroundColor: `${colors.text_grey}40`,
-        borderRadius: 4
-    },
+   
     title:{
         fontFamily:fonts.title_text,
         color:colors.black,

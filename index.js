@@ -9,7 +9,7 @@ import configure_store from './src/db/redux/config_store';
 import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
 
 
-import { home_screen, settings_screen } from './src/navigations/constant';
+import { home_screen, language_picker, settings_screen } from './src/navigations/constant';
 
 Navigation.registerComponent(home_screen, () => wrapper(require('./src/screens/home').default));
 
@@ -34,6 +34,8 @@ Navigation.events().registerAppLaunchedListener(() => {
 Navigation.setLazyComponentRegistrator((componentName) => {
     if(componentName===settings_screen){
         Navigation.registerComponent(settings_screen,()=>gestureHandlerRootHOC(wrapper(require('./src/screens/settings').default)));
+    }else if(componentName===language_picker){
+        Navigation.registerComponent(language_picker,()=>gestureHandlerRootHOC(wrapper(require('./src/screens/settings/language_picker').default)));
     };
 });
 

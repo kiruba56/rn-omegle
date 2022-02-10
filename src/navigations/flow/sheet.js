@@ -1,0 +1,47 @@
+import { Navigation } from 'react-native-navigation';
+import colors from '../../theme/colors';
+import { hp } from '../../utils/responsive';
+
+
+const interpolation = {type:'accelerateDecelerate'};
+
+// prefix to avoid animating previous screen in the stack
+const open_sheet = (name,props={},prefix='') => {
+    Navigation.showModal({
+        component:{
+            name,
+            passProps:{...props},
+            options:{
+                modalPresentationStyle:'overCurrentContext',
+                statusBar:{
+                    drawBehind:true,
+                    backgroundColor:'transparent'
+                },
+                layout:{
+                    backgroundColor:colors.bg,
+                    componentBackgroundColor:'transparent'
+                },
+                animations:{
+                    showModal:{
+                        elementTransitions:[
+                            {
+                                id:'background'+prefix,
+                                alpha:{from:0,to:.26,interpolation}
+                            },
+                            {
+                                id:'sheet'+prefix,
+                                alpha:{from:0,interpolation},
+                                y:{from:hp(100),to:0,interpolation},
+                            }
+                        ],
+                    }
+                }
+            }
+      }
+    });
+};
+
+
+export {
+    open_sheet
+}
