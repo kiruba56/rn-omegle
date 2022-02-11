@@ -13,6 +13,7 @@ import { change_user_preference } from '../../db/redux/types';
 import PanelHeader from './_panel_header';
 import { language_picker, topic_picker } from '../../navigations/constant';
 import { open_sheet } from '../../navigations/flow/sheet';
+import isEqual from 'lodash/isEqual';
 
 const snap_points= [hp(20),hp(40), hp(110)];
 const option_hitslip = {top:hp(2),bottom:hp(2)}
@@ -107,6 +108,12 @@ const Settings = ({componentId}) =>{
 
 const are_equal_values = (p,n) => {
     if(typeof n.value==='object'){
+        if(n.value&&(typeof n.value.length!=="undefined")){
+            if(n.value.length!==p.value.length){
+                return false;
+            };
+            return isEqual(n.value,p.value);
+        };
         return p.value.id===n.value.id;
     };
     return p.value===n.value;
@@ -117,6 +124,15 @@ const Field = memo(({id,title,description,value,type,style,onChange,onPress,push
 
     // const [_value_,_change_values_] = type==='switch'&&useState(value)||[];
 
+
+    const _render_intrests_ = (x) => {
+        return (
+            <View key={x} style={styles.intrest_tag}>
+                <Text style={styles.interest_text}>{x}</Text>
+            </View>
+        );
+    };
+
     const _render_value_ = () => {
         if(id==='language'){
             return (
@@ -126,6 +142,13 @@ const Field = memo(({id,title,description,value,type,style,onChange,onPress,push
                             {value.native_name?<Text style={styles.language_sub_title}>{value.native_name}</Text>:null}
                         </View>
                     <Image resizeMode="contain" style={styles.tick} source={require('../../assets/icons/tick.png')}/>
+                </View>
+            )
+        };
+        if(id==='topics'){
+            return (
+                <View style={styles.interest_container}>
+                    {value.map(_render_intrests_)}
                 </View>
             )
         };
@@ -161,19 +184,36 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         backgroundColor:colors.black
     },
+    intrest_tag:{
+        marginRight:wp(2),
+        marginTop:wp(2),
+        padding:wp(2.9),
+        paddingLeft:wp(4.4),
+        paddingRight:wp(4.4),
+        borderRadius:100,
+        justifyContent:'center',
+        alignItems:'center',
+        minWidth:'20%',
+        borderColor:colors.black,
+        backgroundColor:colors.black,
+    },
+    interest_text:{
+        fontFamily:fonts.button_title,
+        color:colors.white,
+        fontSize:wp(3.8)
+    },
     content_container: {
         flexGrow:1,
         padding: wp(4),
         paddingTop:wp(8),
         backgroundColor: colors.bg,
         paddingBottom:hp(5),
-        transform:[
-            {
-                translateX:0
-            }
-        ]
     },
-   
+    interest_container:{
+        flexDirection:'row',
+        flexWrap:'wrap',
+        // marginTop:hp(1)
+    },
     title:{
         fontFamily:fonts.title_text,
         color:colors.black,
