@@ -10,6 +10,7 @@ import { Navigation } from 'react-native-navigation';
 import Omegle from '../../utils/omegle';
 import LoadingView from './_loading_view';
 import Animated, { FadeInDown, FadeInUp, FadeOutDown, SlideInRight, SlideOutRight } from 'react-native-reanimated';
+import { connect } from 'react-redux';
 
 
 const status_bar_height = StatusBar.currentHeight;
@@ -26,7 +27,8 @@ class Chat extends React.PureComponent{
             _local_stream:null
         };
 
-        this._omegle_ = new Omegle();
+        const language_id = (this.props.language&&this.props.language.id) || 'en';
+        this._omegle_ = new Omegle(language_id,this.props.unmoderated,this.props.topics);
         this._rtc_peer_connection_ = null;
 
         // saving the icecandidates to send to oemgle
@@ -43,7 +45,8 @@ class Chat extends React.PureComponent{
 
     _close_ = () => {
         this._rtc_peer_connection_&&this._rtc_peer_connection_.close();
-        this._omegle_&&this._omegle_.disconnect();
+        this._omegle_&&this._omegle_.is_connected()&&this._omegle_.disconnect();
+        this._omegle_&&this._omegle_.removeAllListeners();
         Navigation.dismissModal(this.props.componentId);
     };
 
@@ -51,14 +54,15 @@ class Chat extends React.PureComponent{
     // calling _set_local_stream_ in componentDidAppear to avoid framedrops when this screens shows up.
     // componentDidAppear(){   
     //     if(!this._component_appeared_){
+    //         this._set_omegle_listners_();
     //         this._start_();
     //         this._component_appeared_ = true;
     //     };
     // };
 
     componentDidMount(){
-        this._set_omegle_listners_();
-        this._start_();
+        // this._set_omegle_listners_();
+        // this._start_();
     }
 
     componentWillUnmount(){
@@ -69,8 +73,8 @@ class Chat extends React.PureComponent{
         try{
             // setting current user camera view before initializing Omegle
             !this.state._local_stream&&await this._set_local_stream_();
-            await this._set_peer_connection_();
-            await this._omegle_.start();
+            // await this._set_peer_connection_();
+            // await this._omegle_.start();
 
         }catch(e){
             console.log(e);
@@ -82,9 +86,16 @@ class Chat extends React.PureComponent{
             return;
         };
 
-        this._omegle_.on('strangerDisconnected',()=>{
-            console.log("DISCONNECTED");
-            this._next_();
+        this._omegle_.on('strangerDisconnected',async()=>{
+            try{
+                if(this.props.autoroll){
+                    await this._reset_();
+                    return this._next_();
+                };
+                this._reset_();
+            }catch(e){
+                console.log("Error in strangerDisconnected listner", e);
+            };
         });
 
         this._omegle_.on('error',e=>{
@@ -156,7 +167,7 @@ class Chat extends React.PureComponent{
                 this._rtc_peer_connection_.onicecandidate = e => {
                     if (!e.candidate) {
                             this._omegle_.send_ice_candidates(this._tmp_ice_candidates_).catch(e=>{
-                                console.log("e",e);
+                                console.log(e);
                             })
                         return;
                     };
@@ -168,7 +179,7 @@ class Chat extends React.PureComponent{
 
                 this._rtc_peer_connection_.onaddstream = e => {
                     if (e.stream && this.state._remote_stream !== e.stream) {
-                        console.log('RemotePC received the stream call');
+                        // console.log('RemotePC received the stream call');
                       return this.setState({_remote_stream:e.stream});
                     };
                 };
@@ -209,18 +220,36 @@ class Chat extends React.PureComponent{
         this.setState({_remote_stream:!this.state._remote_stream})
     };
 
+    _reset_ = () => {
+        return new Promise(async(resolve,reject)=>{
+            try{
+                this._recived_ice_candidates_ = [];
+                this._has_rtc_call_happened_ = false;
+                this.setState({_remote_stream:null});
+                if(this._omegle_.is_connected()){
+                    await this._omegle_.disconnect();
+                }
+                this._rtc_peer_connection_&&this._rtc_peer_connection_.close();
+                this._rtc_peer_connection_ = null;
+                this._tmp_ice_candidates_ = [];
+                resolve();
+            }catch(e){
+                console.log("Error in _reset_", e);
+                reject();
+            };
+        });
+    };
+
     _next_ = async() => {
-        this._recived_ice_candidates_ = [];
-        this._has_rtc_call_happened_ = false;
-        if(this._omegle_.is_connected()){
-            await this._omegle_.disconnect();
-        }
-        this._rtc_peer_connection_.close();
-        this.setState({_remote_stream:null});
-        this._rtc_peer_connection_ = null;
-        this._tmp_ice_candidates_ = [];
-        await this._set_peer_connection_();
-        this._omegle_.start();
+        try{
+            if(this.state._remote_stream||this._rtc_peer_connection_){
+                await this._reset_();
+            };
+            await this._set_peer_connection_();
+            this._omegle_.start();
+        }catch(e){
+            console.log("Error in _next_", e);
+        };
     };
 
     render(){
@@ -391,4 +420,11 @@ const styles = StyleSheet.create({
     },  
 });
 
-export default Chat;
+
+const map_state_to_props = state => {
+    return {
+        ...state.app.user
+    }
+};
+
+export default connect(map_state_to_props)(Chat);

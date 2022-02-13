@@ -1,6 +1,7 @@
 import axios from 'axios';
 import qs from 'querystring';
 import EventEmitter from 'events';
+import UserAgent from 'react-native-user-agent';
 
 const events = [
     // status events
@@ -17,10 +18,10 @@ const events = [
 ]
 
 class Omegle extends EventEmitter{
-    constructor(){
+    constructor(lang="en",unmoderated=false,topics=[]){
         super();
-        this._user_agent_ = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
-        this._language_ = 'ta';
+        this._user_agent_ = null;
+        this._language_ = lang;
         this._url_ = 'front1.omegle.com';
 
         this._client_id_ = null;
@@ -33,10 +34,29 @@ class Omegle extends EventEmitter{
 
         this._total_users_ = null;
 
+        this._is_unmonitored_section_ = unmoderated;
+        this._topics_ = topics;
+
+        // the server will send the waiting event and then search for people with the same topics until the client sends this. Use it after some time to stop the running search, ignore the topics and continue with connecting.
+        this._stop_for_common_like_timer_ = null;
 
 
     };
 
+
+    set_user_agent = () => {
+        return new Promise(async(resolve)=>{
+            try{
+                const user_agent = await UserAgent.getWebViewUserAgent();
+                this._user_agent_ = user_agent;
+                resolve();
+            }catch(e){
+                this._user_agent_ = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
+                // resolve instead of reject because a default value will be set
+                resolve();
+            };
+        }); 
+    };
 
     get_request_option = (path="",data,method) => {
         const is_qs = this._use_querystring_.includes(path);
@@ -106,16 +126,19 @@ class Omegle extends EventEmitter{
         });
     };
 
-    start = (camera="FaceTime HD Camera",topics=[],unmointered=false) => {
+    start = (camera="FaceTime HD Camera") => {
         // group = unmon for unmonitered section
         return new Promise(async(resolve,reject)=>{
             try{
+                if(!this._user_agent_){
+                    await this.set_user_agent();
+                };
                 let data = {rcs:1,firstevents:1,lang:this._language_,randid:this.random(),spid:'',webrtc:1,caps:'recaptcha2,t',camera};
                 await this.setup_server();
-                if(topics.length>0){
-                    data['topics'] = topics;
+                if(this._topics_.length>0){
+                    data['topics'] = this._topics_;
                 };
-                if(unmointered){
+                if(this._is_unmonitored_section_){
                     data['group'] = 'unmon';
                 };
                 const response = await this.request('start',data);
@@ -258,8 +281,10 @@ class Omegle extends EventEmitter{
 
     handle_event = (name,payload) => {
         switch(name){
+            case 'waiting':
+                return this._event_waiting();
             case 'connected':
-                return this._is_connected_ = true;
+                return this._event_connected();
             case 'statusInfo':
                 return this._event_staus_info(payload);
             case 'count':
@@ -271,6 +296,22 @@ class Omegle extends EventEmitter{
         };
     };
 
+    _event_connected = () => {
+        if(this._stop_for_common_like_timer_)clearTimeout(this._stop_for_common_like_timer_);
+        this._stop_for_common_like_timer_ = null;
+        this._is_connected_ = true;
+    };
+
+    _event_waiting = () => {
+        if(this._topics_.length>0){
+            this._stop_for_common_like_timer_ = setTimeout(async()=>{
+                try{
+                    await this.stop_looking_for_common_likes();
+                }catch(e){
+                }
+            },2000);
+        };
+    };
 
     _event_staus_info = (payload) => {
         // Omegle returns a string when a server error occurs
