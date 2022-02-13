@@ -9,10 +9,10 @@ import { RTCPeerConnection, RTCView, mediaDevices, RTCIceCandidate, RTCSessionDe
 import { Navigation } from 'react-native-navigation';
 import Omegle from '../../utils/omegle';
 import LoadingView from './_loading_view';
-import Animated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp, SlideInRight, SlideOutRight } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOutDown, FadeOutUp, SlideInRight, SlideOutRight } from 'react-native-reanimated';
 import { connect } from 'react-redux';
 import { dismiss_chat } from '../../navigations/flow/chat';
-
+import TypingView from './_typing_view';
 
 const status_bar_height = StatusBar.currentHeight;
 const icon_hitslop = {top:hp(2),bottom:hp(2),right:wp(5),left:wp(5)};
@@ -26,7 +26,8 @@ class Chat extends React.PureComponent{
         this.state = {
             _remote_stream:null,
             _local_stream:null,
-            _is_connected:false
+            _is_connected:false,
+            _is_user_typing:false
         };
 
         const language_id = (this.props.language&&this.props.language.id) || 'en';
@@ -67,7 +68,7 @@ class Chat extends React.PureComponent{
 
     componentDidMount(){
         this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
-        // this._set_omegle_listners_();
+        this._set_omegle_listners_();
         this._start_();
     }
 
@@ -80,8 +81,8 @@ class Chat extends React.PureComponent{
         try{
             // setting current user camera view before initializing Omegle
             !this.state._local_stream&&await this._set_local_stream_();
-            // await this._set_peer_connection_();
-            // await this._omegle_.start();
+            await this._set_peer_connection_();
+            await this._omegle_.start();
 
         }catch(e){
             console.log(e);
@@ -165,7 +166,22 @@ class Chat extends React.PureComponent{
         this._omegle_.on('gotMessage',data=>{
             this._count_&&this._count_._update_count(1);
             this._recent_text_&&this._recent_text_._update_text(data);
+            if(this.state._is_user_typing){
+                return this.setState({_is_user_typing:false});
+            };
             // console.log("msg",data);
+        });
+
+        this._omegle_.on('typing',()=>{
+            if(!this.state._is_user_typing){
+                return this.setState({_is_user_typing:true});
+            };
+        });
+
+        this._omegle_.on('stoppedTyping',()=>{
+            if(this.state._is_user_typing){
+                return this.setState({_is_user_typing:false});
+            };
         });
 
     };
@@ -208,7 +224,7 @@ class Chat extends React.PureComponent{
         return new Promise(async(resolve,reject)=>{
             try{
 
-                const is_front = true;
+                const is_front = !true;
                 const devices = await mediaDevices.enumerateDevices();
                 const facing = is_front ? 'front' : 'environment';
                 const faceing_mode = is_front ? 'user' : 'environment';
@@ -272,8 +288,13 @@ class Chat extends React.PureComponent{
 
                     <View style={[styles.stream_container]}>
                          <RTCView zOrder={20} style={[default_styles.flex]} objectFit="cover" streamURL={this.state._remote_stream&&this.state._remote_stream.toURL()} />
-                        {!this.state._remote_stream&&<Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.loading_container}>
+                         {!this.state._remote_stream&&
+                         <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.loading_container}>
                                 <LoadingView />
+                         </Animated.View>}
+                        {this.state._is_user_typing&&
+                        <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.strem_cover}>
+                                <TypingView />
                          </Animated.View>}
                     </View>
                     <View style={[styles.stream_container,styles.local_stream]}>
@@ -398,6 +419,11 @@ const styles = StyleSheet.create({
     },  
     local_stream:{
         height:hp(50)
+    },
+    strem_cover:{
+        ...StyleSheet.absoluteFill,
+        alignItems:'flex-start',
+        justifyContent:'flex-end'
     },
     loading_container:{
         ...StyleSheet.absoluteFill,
