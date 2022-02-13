@@ -13,6 +13,8 @@ import Animated, { FadeInDown, FadeOutDown, FadeOutUp, SlideInRight, SlideOutRig
 import { connect } from 'react-redux';
 import { dismiss_chat } from '../../navigations/flow/chat';
 import TypingView from './_typing_view';
+import { open_sheet } from '../../navigations/flow/sheet';
+import { text_chat } from '../../navigations/constant';
 
 const status_bar_height = StatusBar.currentHeight;
 const icon_hitslop = {top:hp(2),bottom:hp(2),right:wp(5),left:wp(5)};
@@ -27,7 +29,8 @@ class Chat extends React.PureComponent{
             _remote_stream:null,
             _local_stream:null,
             _is_connected:false,
-            _is_user_typing:false
+            _is_user_typing:false,
+            _looking_for_someone:true
         };
 
         const language_id = (this.props.language&&this.props.language.id) || 'en';
@@ -58,18 +61,18 @@ class Chat extends React.PureComponent{
 
 
     // calling _set_local_stream_ in componentDidAppear to avoid framedrops when this screens shows up.
-    // componentDidAppear(){   
-    //     if(!this._component_appeared_){
-    //         this._set_omegle_listners_();
-    //         this._start_();
-    //         this._component_appeared_ = true;
-    //     };
-    // };
+    componentDidAppear(){   
+        if(!this._component_appeared_){
+            this._set_omegle_listners_();
+            this._start_();
+            this._component_appeared_ = true;
+        };
+    };
 
     componentDidMount(){
         this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
-        this._set_omegle_listners_();
-        this._start_();
+        // this._set_omegle_listners_();
+        // this._start_();
     }
 
     componentWillUnmount(){
@@ -95,7 +98,7 @@ class Chat extends React.PureComponent{
         };
 
         this._omegle_.on('connected',()=>{
-            this.setState({_is_connected:true});
+            this.setState({_is_connected:true,_looking_for_someone:false});
         });
 
         this._omegle_.on('strangerDisconnected',async()=>{
@@ -119,7 +122,7 @@ class Chat extends React.PureComponent{
             this._recived_ice_candidates_.push(candidate);
             if(this._has_rtc_call_happened_){
                this._rtc_peer_connection_.addIceCandidate(new RTCIceCandidate(candidate)).catch(e=>{
-                    console.log("a",e);
+                    console.log(e);
                 });
             };
        });
@@ -195,7 +198,7 @@ class Chat extends React.PureComponent{
 
                 this._rtc_peer_connection_.onicecandidate = e => {
                     if (!e.candidate) {
-                            this._omegle_.send_ice_candidates(this._tmp_ice_candidates_).catch(e=>{
+                            this._omegle_&&this._omegle_.send_ice_candidates(this._tmp_ice_candidates_).catch(e=>{
                                 console.log(e);
                             })
                         return;
@@ -246,7 +249,8 @@ class Chat extends React.PureComponent{
     };
 
     _on_chat_ = () => {
-        this._recent_text_&&this._recent_text_._update_text(`Hello ${~~(Math.random()*100)}`);
+        open_sheet(text_chat);
+        // this._recent_text_&&this._recent_text_._update_text(`Hello ${~~(Math.random()*100)}`);
     };
 
     _reset_ = () => {
@@ -254,10 +258,12 @@ class Chat extends React.PureComponent{
             try{
                 this._recived_ice_candidates_ = [];
                 this._has_rtc_call_happened_ = false;
-                this.setState({_remote_stream:null,_is_connected:false});
-                if(this._omegle_.is_connected()){
+                this.setState({_remote_stream:null,_is_connected:false,_is_user_typing:false,_looking_for_someone:Boolean(this.props.autoroll)});
+                this._count_&&this._count_._reset();
+                this._recent_text_&&this._recent_text_._reset();
+                if(this._omegle_&&this._omegle_.is_connected()){
                     await this._omegle_.disconnect();
-                }
+                };
                 this._rtc_peer_connection_&&this._rtc_peer_connection_.close();
                 this._rtc_peer_connection_ = null;
                 this._tmp_ice_candidates_ = [];
@@ -274,8 +280,11 @@ class Chat extends React.PureComponent{
             if(this.state._remote_stream||this._rtc_peer_connection_){
                 await this._reset_();
             };
+            if(!this.state._looking_for_someone){
+                this.setState({_looking_for_someone:true});
+            };
             await this._set_peer_connection_();
-            this._omegle_.start();
+            this._omegle_&&this._omegle_.start();
         }catch(e){
             console.log("Error in _next_", e);
         };
@@ -288,7 +297,7 @@ class Chat extends React.PureComponent{
 
                     <View style={[styles.stream_container]}>
                          <RTCView zOrder={20} style={[default_styles.flex]} objectFit="cover" streamURL={this.state._remote_stream&&this.state._remote_stream.toURL()} />
-                         {!this.state._remote_stream&&
+                         {!this.state._remote_stream&&this.state._looking_for_someone&&
                          <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.loading_container}>
                                 <LoadingView />
                          </Animated.View>}
@@ -328,7 +337,7 @@ class Chat extends React.PureComponent{
                                     </TouchableOpacity>
                             </View>
                             
-                            {this.state._is_connected&&
+                            {(this.state._is_connected||(!this.state._is_connected&&!this.props.autoroll))&&
                             <Animated.View entering={SlideInRight} exiting={SlideOutRight}>
                                 <Bouncy onPress={this._next_} hitSlop={icon_hitslop}>
                                     <View style={styles.btn}>
@@ -359,6 +368,13 @@ class RecentText extends React.PureComponent{
         this.timer&&clearTimeout(this.timer);
     }
 
+    _reset = () =>{
+        this.timer&&clearTimeout(this.timer);
+        if(this.state.text){
+            this.setState({text:null});
+        };
+    };
+
     _update_text = txt => {
         this.timer&&clearTimeout(this.timer);
         // removing the recent text view after a certaiin time
@@ -385,6 +401,12 @@ class Count extends React.PureComponent{
         super();
         this.state = {
             count:0
+        };
+    };
+
+    _reset = () => {
+        if(this.state.count>0){
+            this.setState({count:0});
         };
     };
 

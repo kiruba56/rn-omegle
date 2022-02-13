@@ -21,6 +21,9 @@ const open_sheet = (name,props={},prefix='') => {
                     backgroundColor:colors.bg,
                     componentBackgroundColor:'transparent'
                 },
+                navigationBar:{
+                    backgroundColor:colors.bg
+                },
                 animations:{
                     showModal:{
                         elementTransitions:[

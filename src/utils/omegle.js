@@ -133,7 +133,7 @@ class Omegle extends EventEmitter{
                 if(!this._user_agent_){
                     await this.set_user_agent();
                 };
-                let data = {rcs:1,firstevents:1,lang:this._language_,randid:this.random(),spid:'',webrtc:1,caps:'recaptcha2,t',camera};
+                let data = {rcs:1,firstevents:1,lang:this._language_,randid: this.random(),spid:'',webrtc:1,caps:'recaptcha2,t',camera};
                 await this.setup_server();
                 if(this._topics_.length>0){
                     data['topics'] = this._topics_;
@@ -141,6 +141,7 @@ class Omegle extends EventEmitter{
                 if(this._is_unmonitored_section_){
                     data['group'] = 'unmon';
                 };
+                // console.log(data);
                 const response = await this.request('start',data);
                 if(response&&response.clientID){
                     this._client_id_ = response.clientID;

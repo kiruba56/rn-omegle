@@ -9,7 +9,7 @@ import configure_store from './src/db/redux/config_store';
 import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
 
 
-import { chat_screen, home_screen, language_picker, settings_screen, topic_picker } from './src/navigations/constant';
+import { chat_screen, home_screen, language_picker, settings_screen, text_chat, topic_picker } from './src/navigations/constant';
 
 Navigation.registerComponent(home_screen, () => wrapper(require('./src/screens/home').default));
 
@@ -40,10 +40,13 @@ Navigation.setLazyComponentRegistrator((componentName) => {
        Navigation.registerComponent(topic_picker,()=>gestureHandlerRootHOC(wrapper(require('./src/screens/settings/topic_picker').default)));
     }else if(componentName===chat_screen){
        Navigation.registerComponent(chat_screen,()=>gestureHandlerRootHOC(wrapper(require('./src/screens/chat').default)));
+    }else if(componentName===text_chat){
+      Navigation.registerComponent(text_chat,()=>gestureHandlerRootHOC(require('./src/screens/chat/text_chat').default));
     };
 });
 
 
+// To wrap the component with redux provider
 function wrapper(Component, extra){
   return function inject(props) {
     const _comp = () => (
