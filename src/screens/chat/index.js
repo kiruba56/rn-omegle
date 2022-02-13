@@ -9,7 +9,7 @@ import { RTCPeerConnection, RTCView, mediaDevices, RTCIceCandidate, RTCSessionDe
 import { Navigation } from 'react-native-navigation';
 import Omegle from '../../utils/omegle';
 import LoadingView from './_loading_view';
-import Animated, { FadeInDown, FadeInUp, FadeOutDown, SlideInRight, SlideOutRight } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp, SlideInRight, SlideOutRight } from 'react-native-reanimated';
 import { connect } from 'react-redux';
 import { dismiss_chat } from '../../navigations/flow/chat';
 
@@ -25,7 +25,8 @@ class Chat extends React.PureComponent{
         super(props);
         this.state = {
             _remote_stream:null,
-            _local_stream:null
+            _local_stream:null,
+            _is_connected:false
         };
 
         const language_id = (this.props.language&&this.props.language.id) || 'en';
@@ -43,6 +44,8 @@ class Chat extends React.PureComponent{
         this._component_appeared_ = false;
     };
 
+    _set_count_ref_ = ref => this._count_ = ref;
+    _set_recent_text_ref_ = ref => this._recent_text_ = ref;
 
     _close_ = () => {
         this._rtc_peer_connection_&&this._rtc_peer_connection_.close();
@@ -65,7 +68,7 @@ class Chat extends React.PureComponent{
     componentDidMount(){
         this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
         // this._set_omegle_listners_();
-        // this._start_();
+        this._start_();
     }
 
     componentWillUnmount(){
@@ -89,6 +92,10 @@ class Chat extends React.PureComponent{
         if(!this._omegle_){
             return;
         };
+
+        this._omegle_.on('connected',()=>{
+            this.setState({_is_connected:true});
+        });
 
         this._omegle_.on('strangerDisconnected',async()=>{
             try{
@@ -156,7 +163,9 @@ class Chat extends React.PureComponent{
 
 
         this._omegle_.on('gotMessage',data=>{
-            console.log("msg",data);
+            this._count_&&this._count_._update_count(1);
+            this._recent_text_&&this._recent_text_._update_text(data);
+            // console.log("msg",data);
         });
 
     };
@@ -199,7 +208,7 @@ class Chat extends React.PureComponent{
         return new Promise(async(resolve,reject)=>{
             try{
 
-                const is_front = !true;
+                const is_front = true;
                 const devices = await mediaDevices.enumerateDevices();
                 const facing = is_front ? 'front' : 'environment';
                 const faceing_mode = is_front ? 'user' : 'environment';
@@ -221,6 +230,7 @@ class Chat extends React.PureComponent{
     };
 
     _on_chat_ = () => {
+        this._recent_text_&&this._recent_text_._update_text(`Hello ${~~(Math.random()*100)}`);
     };
 
     _reset_ = () => {
@@ -228,7 +238,7 @@ class Chat extends React.PureComponent{
             try{
                 this._recived_ice_candidates_ = [];
                 this._has_rtc_call_happened_ = false;
-                this.setState({_remote_stream:null});
+                this.setState({_remote_stream:null,_is_connected:false});
                 if(this._omegle_.is_connected()){
                     await this._omegle_.disconnect();
                 }
@@ -280,9 +290,8 @@ class Chat extends React.PureComponent{
                         </TouchableOpacity>
                     </View>
                     <View>
-                        {/* <Animated.View entering={FadeInDown} exiting={FadeOutDown}  style={styles.chat_alert}>
-                             <Text style={styles.chat_text}>M or F?</Text>
-                        </Animated.View> */}
+
+                        <RecentText ref={this._set_recent_text_ref_}/>
 
                         <Animated.View style={styles.bottom}>
                             <View style={styles.bottom_button_row}>
@@ -294,13 +303,11 @@ class Chat extends React.PureComponent{
                                     <TouchableOpacity onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
                                         <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
                                         <Image source={require('../../assets/icons/chat.png')} resizeMode="contain" style={styles.chat}/>
-                                        <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.dot}>
-                                            <Text style={styles.dot_text}>9</Text>
-                                        </Animated.View>
+                                        <Count ref={this._set_count_ref_}/>
                                     </TouchableOpacity>
                             </View>
                             
-                            {this.state._remote_stream&&
+                            {this.state._is_connected&&
                             <Animated.View entering={SlideInRight} exiting={SlideOutRight}>
                                 <Bouncy onPress={this._next_} hitSlop={icon_hitslop}>
                                     <View style={styles.btn}>
@@ -317,6 +324,71 @@ class Chat extends React.PureComponent{
     };
 };
 
+
+class RecentText extends React.PureComponent{
+    constructor(){
+        super();
+        this.state = {
+            text:null
+        };
+        this.timer = null;
+    };
+
+    componentWillUnmount(){
+        this.timer&&clearTimeout(this.timer);
+    }
+
+    _update_text = txt => {
+        this.timer&&clearTimeout(this.timer);
+        // removing the recent text view after a certaiin time
+        this.timer = setTimeout(()=>{
+            this.setState({text:null})
+        },1000);
+        this.setState({text:txt});
+    };
+
+    render(){
+        if(!this.state.text){
+            return null;
+        };
+        return (
+            <Animated.View key={this.state.text} entering={FadeInDown} exiting={FadeOutUp}  style={styles.chat_alert}>
+                <Text style={styles.chat_text}>{this.state.text}</Text>
+            </Animated.View>
+        )
+    }
+}
+
+class Count extends React.PureComponent{
+    constructor(){
+        super();
+        this.state = {
+            count:0
+        };
+    };
+
+    _update_count = (by=0) => {
+        if(by===0){
+            return;
+        };
+        this.setState((prv)=>{
+            return {
+                count:prv.count+by
+            }
+        });
+    }; 
+
+    render(){
+        if(this.state.count===0){
+            return null;
+        };
+        return (
+            <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.dot}>
+                <Text style={styles.dot_text}>{this.state.count>9?'9+':this.state.count}</Text>
+            </Animated.View>
+        )
+    };
+};
 
 const styles = StyleSheet.create({
     stream_container:{
