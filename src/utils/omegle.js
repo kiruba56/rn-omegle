@@ -20,7 +20,7 @@ class Omegle extends EventEmitter{
     constructor(){
         super();
         this._user_agent_ = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
-        this._language_ = 'en';
+        this._language_ = 'ta';
         this._url_ = 'front1.omegle.com';
 
         this._client_id_ = null;
@@ -291,6 +291,7 @@ class Omegle extends EventEmitter{
             try{
                 const response = await this.request('disconnect',{id:this._client_id_});
                 if(response==='win'){
+                    this.reset();
                     return resolve();
                 };
                 throw new Error(`Error in disconnect response ${response}`);

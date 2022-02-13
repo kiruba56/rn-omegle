@@ -1,31 +1,37 @@
 import React from 'react';
-import {View,Text,StyleSheet,Image} from 'react-native';
+import {View,Text,StyleSheet,Image,TouchableWithoutFeedback} from 'react-native';
 import Bouncy from '../../components/bouncy';
 import { open_sheet } from '../../navigations/flow/sheet';
+import { to_chat } from '../../navigations/flow/chat';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
 import fonts from '../../theme/fonts';
 import { hp, wp } from '../../utils/responsive';
-import {settings_screen} from '../../navigations/constant';
-
+import { settings_screen } from '../../navigations/constant';
 
 const Home = () => {
 
     const _on_settings_ = () => open_sheet(settings_screen);
 
+    const _on_press_ = () => {
+        to_chat();
+    };  
+
     return (
-        <View style={[default_styles.flex]}>
-            <View style={[default_styles.flex,default_styles.center]}>
-                    <View style={styles.welcome_container}>
-                            <Text style={styles.title}>Hey </Text>
-                            <Image source={require('../../assets/icons/wave.png')} resizeMode="contain" style={styles.wave}/>
-                    </View> 
-                    <Text style={styles.sub_title}>Tap to start a conversation</Text>
+        <TouchableWithoutFeedback style={default_styles.flex} onPress={_on_press_}>
+            <View style={[default_styles.flex]}>
+                <View style={[default_styles.flex,default_styles.center]}>
+                        <View style={styles.welcome_container}>
+                                <Text style={styles.title}>Hey </Text>
+                                <Image source={require('../../assets/icons/wave.png')} resizeMode="contain" style={styles.wave}/>
+                        </View> 
+                        <Text style={styles.sub_title}>Tap to start a conversation</Text>
+                </View>
+                <Bouncy onPress={_on_settings_} style={styles.settings_container}>
+                    <Image resizeMode="contain" style={styles.settings} source={require('../../assets/icons/cog.png')}/>
+                </Bouncy>
             </View>
-            <Bouncy onPress={_on_settings_} style={styles.settings_container}>
-                <Image resizeMode="contain" style={styles.settings} source={require('../../assets/icons/cog.png')}/>
-            </Bouncy>
-        </View>
+        </TouchableWithoutFeedback>
     );
 };
 

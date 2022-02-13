@@ -4,5 +4,6 @@ export default {
     grey:'#E0E0E0',
     text_grey:'#57606f',
     black:'#2f3542',
+    dark:'#000000',
     primary:'#53A65F'
 };

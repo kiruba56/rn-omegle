@@ -1,335 +1,394 @@
 import React from 'react';
-import {View,Text,StyleSheet,TouchableOpacity} from 'react-native';
-import { RTCPeerConnection, RTCView, mediaDevices, RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
-import Animated, { FadeInUp, SlideInDown, SlideInUp } from 'react-native-reanimated';
+import {View,StyleSheet, StatusBar, TouchableOpacity,Image,Text} from 'react-native';
+import colors from '../../theme/colors';
+import default_styles from '../../theme/default_styles';
+import fonts from '../../theme/fonts';
 import { hp, wp } from '../../utils/responsive';
+import Bouncy from '../../components/bouncy';
+import { RTCPeerConnection, RTCView, mediaDevices, RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
+import { Navigation } from 'react-native-navigation';
 import Omegle from '../../utils/omegle';
+import LoadingView from './_loading_view';
+import Animated, { FadeInDown, FadeInUp, FadeOutDown, SlideInRight, SlideOutRight } from 'react-native-reanimated';
 
 
+const status_bar_height = StatusBar.currentHeight;
+const icon_hitslop = {top:hp(2),bottom:hp(2),right:wp(5),left:wp(5)};
 
-const configuration = {
-    iceServers: [
-      {
-        urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
-      },
-    ],
-    iceCandidatePoolSize: 10,
-};
+const rtc_peer_configuration = {iceServers: [{urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']}],iceCandidatePoolSize: 10};
 
 
-class Home extends React.PureComponent{
-    constructor(){
-        super();
+class Chat extends React.PureComponent{
+    constructor(props){
+        super(props);
         this.state = {
-            localStream:null,
-            remoteStream:null,
-            cachedLocalPC:null
+            _remote_stream:null,
+            _local_stream:null
         };
-        this.omegle = null;
-        this.local_ice_candidates = [];
-        this.remote_ice_candidates = [];
-        this.has_rtc_call_happened = false;
+
+        this._omegle_ = new Omegle();
+        this._rtc_peer_connection_ = null;
+
+        // saving the icecandidates to send to oemgle
+        this._tmp_ice_candidates_ = [];
+        // saving the recvided icecandidates to add in the right state.
+        this._recived_ice_candidates_ = [];
+        this._has_rtc_call_happened_ = false;
+
+        Navigation.events().bindComponent(this);
+        // to only do something when component appeared for the first time. RNN trigger componentDidAppear everytime this screen come top in the stack. 
+        this._component_appeared_ = false;
     };
+
+
+    _close_ = () => {
+        this._rtc_peer_connection_&&this._rtc_peer_connection_.close();
+        this._omegle_&&this._omegle_.disconnect();
+        Navigation.dismissModal(this.props.componentId);
+    };
+
+
+    // calling _set_local_stream_ in componentDidAppear to avoid framedrops when this screens shows up.
+    // componentDidAppear(){   
+    //     if(!this._component_appeared_){
+    //         this._start_();
+    //         this._component_appeared_ = true;
+    //     };
+    // };
 
     componentDidMount(){
-        this.set_local_stream();
-    };
-
-    componentWillUnmount(){
-        this.omegle = null;
+        this._set_omegle_listners_();
+        this._start_();
     }
 
-    ready =async () => {
-       this.omegle = new Omegle();
+    componentWillUnmount(){
+        this._omegle_ = null;
+    }
 
-       this.omegle.on('strangerDisconnected',()=>{
-           console.log("DISCONNECTED");
-       })
+    _start_ = async() => {
+        try{
+            // setting current user camera view before initializing Omegle
+            !this.state._local_stream&&await this._set_local_stream_();
+            await this._set_peer_connection_();
+            await this._omegle_.start();
 
-       this.omegle.on('error',e=>{
-           console.log(e);
-           this.omegle.start();
-       })
+        }catch(e){
+            console.log(e);
+        };
+    };
 
-       this.omegle.on('icecandidate',candidate=>{
-            this.remote_ice_candidates.push(candidate);
-            if(this.has_rtc_call_happened){
-                this.state.cachedLocalPC.addIceCandidate(new RTCIceCandidate(candidate)).catch(e=>{
-                    console.log(e);
-                })
+    _set_omegle_listners_ = () => {
+        if(!this._omegle_){
+            return;
+        };
+
+        this._omegle_.on('strangerDisconnected',()=>{
+            console.log("DISCONNECTED");
+            this._next_();
+        });
+
+        this._omegle_.on('error',e=>{
+            console.log(e);
+            this._omegle_.start();
+        });
+
+        this._omegle_.on('icecandidate',candidate=>{
+            this._recived_ice_candidates_.push(candidate);
+            if(this._has_rtc_call_happened_){
+               this._rtc_peer_connection_.addIceCandidate(new RTCIceCandidate(candidate)).catch(e=>{
+                    console.log("a",e);
+                });
             };
        });
-       
-       this.omegle.on('rtccall',async()=>{
-            const offer = await this.state.cachedLocalPC.createOffer();
-            await this.state.cachedLocalPC.setLocalDescription(offer);
-            await this.omegle.send_rtc_peer_description(this.state.cachedLocalPC.localDescription);
-            this.has_rtc_call_happened = true;
-       });
 
-       this.omegle.on('rtcpeerdescription',async(data)=>{
-            // console.log('rtcpeerdescription data',this.state.cachedLocalPC.localDescription);
-
-           
-
-            if (!this.state.cachedLocalPC.currentRemoteDescription) {
-                const rtcSessionDescription = new RTCSessionDescription(data);
+       this._omegle_.on('rtccall',async()=>{
+           try{
+                const offer = await this._rtc_peer_connection_.createOffer();
+                await this._rtc_peer_connection_.setLocalDescription(offer);
+                await this._omegle_.send_rtc_peer_description(this._rtc_peer_connection_.localDescription);
+                this._has_rtc_call_happened_ = true;
+           }catch(e){
+                console.log("Error inside rtccall listner",e);
+           };
+        });
+        
+        this._omegle_.on('rtcpeerdescription',async(data)=>{
+            if (!this._rtc_peer_connection_.currentRemoteDescription) {
+                const rtc_session_description = new RTCSessionDescription(data);
                 try{
-                    await this.state.cachedLocalPC.setRemoteDescription(rtcSessionDescription);
+                    await this._rtc_peer_connection_.setRemoteDescription(rtc_session_description);
+            
+                    if(!this._has_rtc_call_happened_){
+                        const answer = await this._rtc_peer_connection_.createAnswer();
+                        await this._rtc_peer_connection_.setLocalDescription(answer);
+                        await this._omegle_.send_rtc_peer_description(this._rtc_peer_connection_.localDescription);
+                        
+                    };
+                    this._rtc_peer_connection_.remoteDescription&&this._recived_ice_candidates_.map(d=>{
+                        if(!this._rtc_peer_connection_.remoteDescription) return;
+                        this._rtc_peer_connection_.addIceCandidate(new RTCIceCandidate(d))
+                        .catch(e=>{
+                            console.log(e);
+                        });
+                    });
+
                 }catch(e){
                     console.log("ERror in rtcpeerdescription")
                     console.log(e);                    
                 }
-            
-                if(!this.has_rtc_call_happened){
-                    const answer = await this.state.cachedLocalPC.createAnswer();
-                    await this.state.cachedLocalPC.setLocalDescription(answer);
-                    await this.omegle.send_rtc_peer_description(this.state.cachedLocalPC.localDescription);
-                    
-                };
-                this.remote_ice_candidates.map(d=>{
-                    if(!this.state.cachedLocalPC.remoteDescription){
-                       return;
-                   };
-                   this.state.cachedLocalPC.addIceCandidate(new RTCIceCandidate(d)).catch(e=>{
-                       console.log(e, d);
-                   })
-               });
             }
        });
 
-    //    this.omegle.on('icecandidate',(data)=>{
-    //         if(!this.state.cachedLocalPC.remoteDescription){
-    //             return;
-    //             };
-    //         console.log('icecandidate data',data);
-    //         this.state.cachedLocalPC.addIceCandidate(new RTCIceCandidate(data));
-    //     });
-        this.omegle.on('gotMessage',data=>{
+
+        this._omegle_.on('gotMessage',data=>{
             console.log("msg",data);
-        })
-        try{
-
-           await this.omegle.start();
-        }catch(e){
-            console.log(e);
-        }
+        });
 
     };
 
-    login = async() => {
-        try{
-            this.set_local_stream();
-        }catch(e){
-            alert("NO USER")
-        };  
-    
-    }
+    _set_peer_connection_ = () => {
+        return new Promise(async(resolve,reject)=>{
+            try{
+                this._rtc_peer_connection_ = new RTCPeerConnection(rtc_peer_configuration);
 
-    start = async() => {
-        try{
-            const localPC = new RTCPeerConnection(configuration);
-            localPC.addStream(this.state.localStream);
+                this._rtc_peer_connection_.addStream(this.state._local_stream);
 
-            // const roomRef = await firestore().collection('rooms').doc(room_id);
-            // const callerCandidatesCollection = roomRef.collection('callerCandidates');
+                this._rtc_peer_connection_.onicecandidate = e => {
+                    if (!e.candidate) {
+                            this._omegle_.send_ice_candidates(this._tmp_ice_candidates_).catch(e=>{
+                                console.log("e",e);
+                            })
+                        return;
+                    };
+                    // this._omegle_.send_ice_candidates([e]).catch(e=>{
+                    //     console.log("e",e);
+                    // })
+                    this._tmp_ice_candidates_.push(e.candidate);
+                };
 
-            localPC.onicecandidate = e => {
-                if (!e.candidate) {
-                  console.log('Got final candidate!');
-                  setTimeout(()=>{
-                    this.omegle.send_ice_candidates(this.local_ice_candidates).catch(e=>{
-                        console.log(e);
-                    })
-                  },300);
-                   
-                
-                  return;
-                }
-                this.local_ice_candidates.push(e.candidate);
-                // console.log(this.ice_candidates);
-                // console.log(this.ice_candidates);
-                // callerCandidatesCollection.add(e.candidate.toJSON());
-                // console.log(e.candidate);
-                // this.omegle&&this.omegle.sendICECandidates(e.candidate.toJSON())
+                this._rtc_peer_connection_.onaddstream = e => {
+                    if (e.stream && this.state._remote_stream !== e.stream) {
+                        console.log('RemotePC received the stream call');
+                      return this.setState({_remote_stream:e.stream});
+                    };
+                };
+                resolve();
+            }catch(e){
+                reject(e);
             };
-
-            localPC.onaddstream = e => {
-                if (e.stream && this.state.remoteStream !== e.stream) {
-                  console.log('RemotePC received the stream call');
-                  this.setState({remoteStream:e.stream});
-                }
-            };
-
-            // await localPC.createOffer({mandatory: {
-            //     OfferToReceiveAudio: !0,
-            //     OfferToReceiveVideo: !0
-            // }});
-            // const offer = await localPC.createOffer();
-            // await localPC.setLocalDescription(offer);
-        
-
-            // const offer = await localPC.createOffer();
-            // await localPC.setLocalDescription(offer);
-
-
-            // // const roomWithOffer = { offer };
-            // // await roomRef.set(roomWithOffer);
-            // // this.omegle&&this.omegle.sendRTCPeerDescription(offer);
-
-
-            // roomRef.onSnapshot(async snapshot => {
-            //     const data = snapshot.data();
-            //     if (!localPC.currentRemoteDescription && data.answer) {
-            //       const rtcSessionDescription = new RTCSessionDescription(data.answer);
-            //       await localPC.setRemoteDescription(rtcSessionDescription);
-            //     }
-            // });
-
-            // roomRef.collection('calleeCandidates').onSnapshot(snapshot => {
-            //     snapshot.docChanges().forEach(async change => {
-            //       if (change.type === 'added') {
-            //         let data = change.doc.data();
-            //         await localPC.addIceCandidate(new RTCIceCandidate(data));
-            //       }
-            //     });
-            // });
-          
-            this.setState({cachedLocalPC:localPC},()=>{
-                this.ready();
-            })
-          
-
-        }catch(e){
-            console.log("start",e);
-        }
-    };
-
-
-    clear = () => {
-        if (this.state.cachedLocalPC) {
-            this.state.cachedLocalPC.removeStream(this.localStream);
-            this.state.cachedLocalPC.close();
-        };
-        this.setState({
-            localStream:null,
-            remoteStream:null,
-            cachedLocalPC:null
         });
     };
 
-    switchCamera = () => {
-        this.state.localStream.getVideoTracks().forEach(track => track._switchCamera());
-    };
 
-    set_local_stream = async() => {
-        try{
-            const isFront = !true;
-            const devices = await mediaDevices.enumerateDevices();
+    _set_local_stream_ = () => {
+        return new Promise(async(resolve,reject)=>{
+            try{
+
+                const is_front = !true;
+                const devices = await mediaDevices.enumerateDevices();
+                const facing = is_front ? 'front' : 'environment';
+                const faceing_mode = is_front ? 'user' : 'environment';
     
-            const facing = isFront ? 'front' : 'environment';
-            const videoSourceId = devices.find(device => device.kind === 'videoinput' && device.facing === facing);
+                const source_id = devices.find(device => device.kind === 'videoinput' && device.facing === facing);
+    
+                const constraints = {audio: true, video: {mandatory: {minWidth:wp(100),minHeight: hp(50)}, facingMode:faceing_mode, optional: source_id ? [{ sourceId: source_id }] : [] }};
+                const _local_stream = await mediaDevices.getUserMedia(constraints);
 
-            const facingMode = isFront ? 'user' : 'environment';
-            const constraints = {
-                audio: true,
-                video: {
-                  mandatory: {
-                    minWidth: wp(97),
-                    minHeight: hp(40),
-                    // minFrameRate: 30,
-                  },
-                  facingMode,
-                  optional: videoSourceId ? [{ sourceId: videoSourceId }] : [],
-                },
-              };
-              this.setState({localStream:null,remoteStream:null})
-            const newStream = await mediaDevices.getUserMedia(constraints);
-            this.setState({localStream:newStream},()=>{
-                this.start();
-            });
-            // console.log(this.state.localStream)
-            
-        }catch(e){
-            console.log("set_local_stream", e);
-        }
-      
+                this.setState({_local_stream},resolve);
+            }catch(e){
+                reject(e);
+            }
+        });
     };
 
+    _switch_camera_ = () => {
+        this.state._local_stream.getVideoTracks().forEach(track => track._switchCamera());
+    };
+
+    _on_chat_ = () => {
+        this.setState({_remote_stream:!this.state._remote_stream})
+    };
+
+    _next_ = async() => {
+        this._recived_ice_candidates_ = [];
+        this._has_rtc_call_happened_ = false;
+        if(this._omegle_.is_connected()){
+            await this._omegle_.disconnect();
+        }
+        this._rtc_peer_connection_.close();
+        this.setState({_remote_stream:null});
+        this._rtc_peer_connection_ = null;
+        this._tmp_ice_candidates_ = [];
+        await this._set_peer_connection_();
+        this._omegle_.start();
+    };
 
     render(){
         return (
-            <View style={styles.container}>
-                <View style={styles.view}>
-                     <RTCView  zOrder={20}   style={styles.flex} streamURL={this.state.localStream && this.state.localStream.toURL()} />
+            <>
+                <View style={[default_styles.align_between]}>
+
+                    <View style={[styles.stream_container]}>
+                         <RTCView zOrder={20} style={[default_styles.flex]} objectFit="cover" streamURL={this.state._remote_stream&&this.state._remote_stream.toURL()} />
+                        {!this.state._remote_stream&&<Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.loading_container}>
+                                <LoadingView />
+                         </Animated.View>}
+                    </View>
+                    <View style={[styles.stream_container,styles.local_stream]}>
+                        <RTCView zOrder={20} style={default_styles.flex} objectFit="cover" streamURL={this.state._local_stream&&this.state._local_stream.toURL()} />
+                    </View>
+
                 </View>
-                <View style={styles.view}>
-                    <RTCView zOrder={20}  style={styles.flex} streamURL={this.state.remoteStream && this.state.remoteStream.toURL()} />
-                </View>
-                {
-                    !this.state.localStream?
-                    <View style={styles.bottom}/>
-                    :
-                    <Animated.View entering={SlideInDown} style={styles.bottom}>
-                        <TouchableOpacity onPress={this.start}> 
-                            <View style={styles.button}>
-                                    <Text style={styles.btn_text}>START</Text>
-                            </View>
+
+                <View style={styles.overlay}>
+                    <View style={styles.top}>
+                        <TouchableOpacity onPress={this._close_} hitSlop={icon_hitslop}>
+                            <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={styles.shadow} />
+                            <Image source={require('../../assets/icons/close.png')} resizeMode="contain" style={styles.close}/>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={this.switchCamera}>
-                            <View style={styles.button}>
-                                <Text style={styles.btn_text}>SWITCH CAMERA</Text>
+                    </View>
+                    <Animated.View style={styles.bottom}>
+                            <View style={styles.bottom_button_row}>
+                                    <TouchableOpacity onPress={this._switch_camera_} style={styles.icon_container} hitSlop={icon_hitslop}>
+                                        <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
+                                        <Image source={require('../../assets/icons/camera.png')} resizeMode="contain" style={styles.camera}/>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
+                                        <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
+                                        <Image source={require('../../assets/icons/chat.png')} resizeMode="contain" style={styles.chat}/>
+                                        {/* <View style={styles.dot}>
+                                            <Text style={styles.dot_text}>1</Text>
+                                        </View> */}
+                                    </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
-                        {/* <TouchableOpacity onPress={this.join}>
-                            <View style={styles.button}>
-                                <Text style={styles.btn_text}>JOIN</Text>
-                            </View>
-                        </TouchableOpacity> */}
-                        
+                            
+                            {this.state._remote_stream&&
+                            <Animated.View entering={SlideInRight} exiting={SlideOutRight}>
+                                <Bouncy onPress={this._next_} hitSlop={icon_hitslop}>
+                                    <View style={styles.btn}>
+                                            <Text style={styles.btn_text}>Next</Text>
+                                    </View>
+                                </Bouncy>
+                            </Animated.View>}
+                            
                     </Animated.View>
-                }
-            </View>
-        )
-    }
+                </View>
+            </>
+        );
+    };
 };
 
 
-export default Home;
-
-
 const styles = StyleSheet.create({
-    container:{
+    stream_container:{
+        width:'100%',
         flex:1,
-        justifyContent:'space-around',
+    },  
+    local_stream:{
+        height:hp(50)
+    },
+    loading_container:{
+        ...StyleSheet.absoluteFill,
+        justifyContent:'center',
         alignItems:'center'
     },
-    flex:{
-        flex:1
+    overlay:{
+        position:'absolute',
+        left:0,
+        top:0,
+        right:0,
+        bottom:0,
+        padding:wp(5),
+        paddingTop:wp(5)+status_bar_height,
+        justifyContent:'space-between'
     },
-    view:{
-        width:wp(97),
-        height:hp(40),
-        backgroundColor:'red'
+    top:{
+        flexDirection:'row',
+        justifyContent:'space-between'
+    },
+    close:{
+        width:wp(5),
+        height: wp(5),
+        tintColor:colors.white,
+    },
+    shadow:{
+        tintColor:colors.dark,
+        position:'absolute',
+        opacity: .5,
+        width:wp(5),
+        height: wp(5),
+        transform:[
+            {
+                scale:3.2
+            }
+        ]
     },
     bottom:{
-        height:hp(10),
-        width:wp(95),
-        justifyContent:'space-between',
-        alignItems:'center',
         flexDirection:'row',
-        alignSelf:'center'
+        justifyContent:'space-between',
+        alignItems:'flex-end'
     },
-    button:{
-        backgroundColor:'#000',
-        // marginLeft:wp(6),
-        // marginRight:wp(6),
-        padding:wp(3.5),
-        paddingLeft:wp(5),
-        paddingRight:wp(5)
+    bottom_button_row:{
+        flexDirection:'row'
     },
+    icon_shadow:{
+        transform:[
+            {
+                scale:3.5
+            }
+        ]
+    },
+    chat:{
+        width:wp(7.3),
+        height:wp(7.3),
+        tintColor:colors.white
+    },
+    camera:{
+        width:wp(9.2),
+        height:wp(9.2),
+        tintColor:colors.white
+    },
+    dot_text:{
+        color:colors.white,
+        fontFamily:fonts.title_regular,
+        fontSize:wp(3.5),
+    },
+    dot:{
+        backgroundColor:colors.danger,
+        width:wp(5),
+        height:wp(5),
+        borderRadius:100,
+        position:'absolute',
+        top:-wp(1),
+        right:-wp(1),
+        justifyContent:'center',
+        alignItems:'center'
+    },
+    icon_container:{
+        justifyContent:'center',
+        alignItems:'center',
+        overflow:'visible'
+    },  
+    chat_aligner:{
+        marginLeft:wp(5)  
+    },
+
     btn_text:{
-        color:'#fff',
-        fontSize:wp(4)
-    }
+        color:colors.black,
+        fontFamily:fonts.button_title,
+        fontSize:wp(4.8)
+    },
+   
+    btn:{
+        padding:wp(7),
+        paddingBottom:wp(3),
+        paddingTop:wp(3),
+        borderRadius:100,
+        justifyContent:'center',
+        alignItems:'center',
+        backgroundColor:colors.white,
+    },  
 });
+
+export default Chat;
