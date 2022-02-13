@@ -1,5 +1,5 @@
 import React from 'react';
-import {View,StyleSheet, StatusBar, TouchableOpacity,Image,Text} from 'react-native';
+import {View,StyleSheet, StatusBar, TouchableOpacity,Image,Text,BackHandler} from 'react-native';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
 import fonts from '../../theme/fonts';
@@ -11,6 +11,7 @@ import Omegle from '../../utils/omegle';
 import LoadingView from './_loading_view';
 import Animated, { FadeInDown, FadeInUp, FadeOutDown, SlideInRight, SlideOutRight } from 'react-native-reanimated';
 import { connect } from 'react-redux';
+import { dismiss_chat } from '../../navigations/flow/chat';
 
 
 const status_bar_height = StatusBar.currentHeight;
@@ -47,7 +48,8 @@ class Chat extends React.PureComponent{
         this._rtc_peer_connection_&&this._rtc_peer_connection_.close();
         this._omegle_&&this._omegle_.is_connected()&&this._omegle_.disconnect();
         this._omegle_&&this._omegle_.removeAllListeners();
-        Navigation.dismissModal(this.props.componentId);
+        dismiss_chat(this.props.componentId);
+        return true;
     };
 
 
@@ -61,12 +63,14 @@ class Chat extends React.PureComponent{
     // };
 
     componentDidMount(){
+        this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
         // this._set_omegle_listners_();
         // this._start_();
     }
 
     componentWillUnmount(){
         this._omegle_ = null;
+        this._back_handler_&&this._back_handler_.remove();
     }
 
     _start_ = async() => {
@@ -213,11 +217,10 @@ class Chat extends React.PureComponent{
     };
 
     _switch_camera_ = () => {
-        this.state._local_stream.getVideoTracks().forEach(track => track._switchCamera());
+        this.state._local_stream&&this.state._local_stream.getVideoTracks().forEach(track => track._switchCamera());
     };
 
     _on_chat_ = () => {
-        this.setState({_remote_stream:!this.state._remote_stream})
     };
 
     _reset_ = () => {
@@ -276,7 +279,12 @@ class Chat extends React.PureComponent{
                             <Image source={require('../../assets/icons/close.png')} resizeMode="contain" style={styles.close}/>
                         </TouchableOpacity>
                     </View>
-                    <Animated.View style={styles.bottom}>
+                    <View>
+                        {/* <Animated.View entering={FadeInDown} exiting={FadeOutDown}  style={styles.chat_alert}>
+                             <Text style={styles.chat_text}>M or F?</Text>
+                        </Animated.View> */}
+
+                        <Animated.View style={styles.bottom}>
                             <View style={styles.bottom_button_row}>
                                     <TouchableOpacity onPress={this._switch_camera_} style={styles.icon_container} hitSlop={icon_hitslop}>
                                         <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
@@ -286,9 +294,9 @@ class Chat extends React.PureComponent{
                                     <TouchableOpacity onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
                                         <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
                                         <Image source={require('../../assets/icons/chat.png')} resizeMode="contain" style={styles.chat}/>
-                                        {/* <View style={styles.dot}>
-                                            <Text style={styles.dot_text}>1</Text>
-                                        </View> */}
+                                        <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.dot}>
+                                            <Text style={styles.dot_text}>9</Text>
+                                        </Animated.View>
                                     </TouchableOpacity>
                             </View>
                             
@@ -300,8 +308,9 @@ class Chat extends React.PureComponent{
                                     </View>
                                 </Bouncy>
                             </Animated.View>}
+                        </Animated.View>
                             
-                    </Animated.View>
+                    </View>
                 </View>
             </>
         );
@@ -313,6 +322,7 @@ const styles = StyleSheet.create({
     stream_container:{
         width:'100%',
         flex:1,
+        backgroundColor:colors.black
     },  
     local_stream:{
         height:hp(50)
@@ -368,6 +378,11 @@ const styles = StyleSheet.create({
             }
         ]
     },
+    chat_text:{
+        fontFamily:fonts.title_regular,
+        color:colors.black,
+        fontSize:wp(4),
+    },
     chat:{
         width:wp(7.3),
         height:wp(7.3),
@@ -379,12 +394,29 @@ const styles = StyleSheet.create({
         tintColor:colors.white
     },
     dot_text:{
-        color:colors.white,
+        color:colors.black,
         fontFamily:fonts.title_regular,
         fontSize:wp(3.5),
     },
+    chat_alert:{
+        backgroundColor:colors.white,
+        padding:wp(5),
+        paddingBottom:wp(2.5),
+        paddingTop:wp(2.5),
+        marginBottom:hp(1),
+        borderRadius:100,
+        alignSelf:'flex-start',
+        shadowColor: colors.white,
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.20,
+        shadowRadius: 1.41,
+        elevation: 2,
+    },
     dot:{
-        backgroundColor:colors.danger,
+        backgroundColor:colors.white,
         width:wp(5),
         height:wp(5),
         borderRadius:100,
@@ -392,7 +424,15 @@ const styles = StyleSheet.create({
         top:-wp(1),
         right:-wp(1),
         justifyContent:'center',
-        alignItems:'center'
+        alignItems:'center',
+        shadowColor: colors.white,
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.20,
+        shadowRadius: 1.41,
+        elevation: 2,
     },
     icon_container:{
         justifyContent:'center',
