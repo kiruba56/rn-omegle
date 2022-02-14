@@ -6,9 +6,9 @@ import colors from '../../theme/colors';
 
 const size = wp(10);
 
-const TypingView = () => {
+const TypingView = ({style}) => {
     return  (
-        <View style={styles.container}>
+        <View style={style||styles.container}>
             <LottieView style={{width:size,height:size}} resizeMode="contain" autoPlay loop source={require('../../assets/animation/chat_indicator.json')}/>
         </View>
 

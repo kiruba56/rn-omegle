@@ -17,7 +17,7 @@ const snap_points= [hp(10),hp(110)];
 /*
     TODO: Add more and real topics.
 */
-const topics = ['Travel','Make Friends','Movies','Music','Reading','Art','Singing','Love','Tech','Anime','Pizza'];
+const topics = ['Travel','Make Friends','Movies','Music','Reading','Art','Singing','Love','Tech','Anime','Pizza','1234TESTME'];
 
 
 const TopicPicker = ({componentId,selected=[]}) => {

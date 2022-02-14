@@ -10,6 +10,7 @@ const open_sheet = (name,props={},prefix='') => {
     Navigation.showModal({
         component:{
             name,
+            id:`${name}.id`,
             passProps:{...props},
             options:{
                 modalPresentationStyle:'overCurrentContext',

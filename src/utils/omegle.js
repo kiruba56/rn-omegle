@@ -2,6 +2,8 @@ import axios from 'axios';
 import qs from 'querystring';
 import EventEmitter from 'events';
 import UserAgent from 'react-native-user-agent';
+import format from 'date-fns/format';
+
 
 const events = [
     // status events
@@ -11,7 +13,7 @@ const events = [
     // recaptcha
     'recaptchaRequired','recaptchaRejected',
     // chat
-    'typing', 'stoppedTyping', 'gotMessage', 'strangerDisconnected',
+    'typing', 'stoppedTyping', 'strangerDisconnected',//'gotMessage' -> removing gotMessage to intercept the payload and emit a custom payload
     //webrtc
     'rtccall','icecandidate','rtcpeerdescription'
 
@@ -39,6 +41,10 @@ class Omegle extends EventEmitter{
 
         // the server will send the waiting event and then search for people with the same topics until the client sends this. Use it after some time to stop the running search, ignore the topics and continue with connecting.
         this._stop_for_common_like_timer_ = null;
+
+        this._chat_ = [
+            
+        ];
 
 
     };
@@ -189,8 +195,10 @@ class Omegle extends EventEmitter{
     toggle_typing = (to=false)=>{
         return new Promise(async(resolve,reject)=>{
             try{
+                // console.log("called",to);
                 const response = await this.request(to?'typing':'stoppedtyping',{id:this._client_id_});
                 if(response==='win'){
+                    // console.log("typing",to,response);s
                     return resolve();
                 };
                 throw new Error(`Error in toggle_typing response ${response}`);
@@ -204,6 +212,9 @@ class Omegle extends EventEmitter{
     send_message = (msg="")=>{
         return new Promise(async(resolve,reject)=>{
             try{
+                const data = {by:'me',id:this.random(),text:msg,time:format(new Date(), 'HH:mm')};
+                this._chat_.push(data);
+                this.emit('gotMessage',data);
                 const response = await this.request('send',{msg,id:this._client_id_});
                 if(response==='win'){
                     return resolve();
@@ -288,6 +299,10 @@ class Omegle extends EventEmitter{
                 return this._event_connected();
             case 'statusInfo':
                 return this._event_staus_info(payload);
+            case 'gotMessage':
+                return this._event_got_message(payload);
+            case 'recaptchaRequired':
+                return console.log(payload);
             case 'count':
                 return this._total_users_ = payload;
             case 'strangerDisconnected':
@@ -295,6 +310,13 @@ class Omegle extends EventEmitter{
             default:
                break;
         };
+    };
+
+    _event_got_message = (msg) => {
+        const data = {by:'stranger',id:this.random(),text:msg,time:format(new Date(), 'HH:mm')};
+        this._chat_.push(data);
+        // emiting a custom event
+        this.emit('gotMessage',data);
     };
 
     _event_connected = () => {
@@ -348,6 +370,7 @@ class Omegle extends EventEmitter{
         this._is_connected_ = false;
         this._challenge_ = null;
         this._client_id_ = null;
+        this._chat_ = [];
     }
 
     random = () => {
@@ -359,6 +382,8 @@ class Omegle extends EventEmitter{
     is_connected = () => {
         return this._is_connected_;
     };
+
+    get_chat = () => this._chat_;
 
 };
 

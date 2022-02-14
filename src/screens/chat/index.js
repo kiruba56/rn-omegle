@@ -48,7 +48,7 @@ class Chat extends React.PureComponent{
         this._component_appeared_ = false;
     };
 
-    _set_count_ref_ = ref => this._count_ = ref;
+    // _set_count_ref_ = ref => this._count_ = ref;
     _set_recent_text_ref_ = ref => this._recent_text_ = ref;
 
     _close_ = () => {
@@ -71,7 +71,7 @@ class Chat extends React.PureComponent{
 
     componentDidMount(){
         this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
-        // this._set_omegle_listners_();
+        this._set_omegle_listners_();
         this._start_();
     }
 
@@ -84,8 +84,8 @@ class Chat extends React.PureComponent{
         try{
             // setting current user camera view before initializing Omegle
             !this.state._local_stream&&await this._set_local_stream_();
-            // await this._set_peer_connection_();
-            // await this._omegle_.start();
+            await this._set_peer_connection_();
+            await this._omegle_.start();
 
         }catch(e){
             console.log(e);
@@ -167,9 +167,10 @@ class Chat extends React.PureComponent{
 
 
         this._omegle_.on('gotMessage',data=>{
-            this._count_&&this._count_._update_count(1);
-            this._recent_text_&&this._recent_text_._update_text(data);
+            // this._count_&&this._count_._update_count(1);
+            this._recent_text_&&this._recent_text_._update_text(data.text);
             if(this.state._is_user_typing){
+                Navigation.updateProps(`${text_chat}.id`,{_is_stranger_typing:false});
                 return this.setState({_is_user_typing:false});
             };
             // console.log("msg",data);
@@ -177,12 +178,14 @@ class Chat extends React.PureComponent{
 
         this._omegle_.on('typing',()=>{
             if(!this.state._is_user_typing){
+                Navigation.updateProps(`${text_chat}.id`,{_is_stranger_typing:true});
                 return this.setState({_is_user_typing:true});
             };
         });
 
         this._omegle_.on('stoppedTyping',()=>{
             if(this.state._is_user_typing){
+                Navigation.updateProps(`${text_chat}.id`,{_is_stranger_typing:false});
                 return this.setState({_is_user_typing:false});
             };
         });
@@ -249,8 +252,17 @@ class Chat extends React.PureComponent{
     };
 
     _on_chat_ = () => {
-        open_sheet(text_chat);
-        // this._recent_text_&&this._recent_text_._update_text(`Hello ${~~(Math.random()*100)}`);
+        // this._count_&&this._count_._reset();
+        this._recent_text_&&this._recent_text_._reset();
+        open_sheet(text_chat,{
+            send:(txt)=>{
+                this.state._is_connected&&this._omegle_&&this._omegle_.send_message(txt);
+            },
+            toggle_typing:(to)=>this.state._is_connected&&this._omegle_&&this._omegle_.toggle_typing(to),
+            _is_user_typing:this.state._is_user_typing,
+            _data:this._omegle_.get_chat()
+        });
+
     };
 
     _reset_ = () => {
@@ -258,7 +270,7 @@ class Chat extends React.PureComponent{
             try{
                 this._has_rtc_call_happened_ = false;
                 this.setState({_remote_stream:null,_is_connected:false,_is_user_typing:false,_looking_for_someone:Boolean(this.props.autoroll)});
-                this._count_&&this._count_._reset();
+                // this._count_&&this._count_._reset();
                 this._recent_text_&&this._recent_text_._reset();
                 if(this._omegle_&&this._omegle_.is_connected()){
                     await this._omegle_.disconnect();
@@ -330,10 +342,10 @@ class Chat extends React.PureComponent{
                                         <Image source={require('../../assets/icons/camera.png')} resizeMode="contain" style={styles.camera}/>
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity disabled={this.state._is_connected} onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
+                                    <TouchableOpacity disabled={!this.state._is_connected} onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
                                         <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
                                         <Image source={require('../../assets/icons/chat.png')} resizeMode="contain" style={styles.chat}/>
-                                        <Count ref={this._set_count_ref_}/>
+                                        {/* <Count ref={this._set_count_ref_}/> */}
                                     </TouchableOpacity>
                             </View>
                             
@@ -396,42 +408,42 @@ class RecentText extends React.PureComponent{
     }
 }
 
-class Count extends React.PureComponent{
-    constructor(){
-        super();
-        this.state = {
-            count:0
-        };
-    };
+// class Count extends React.PureComponent{
+//     constructor(){
+//         super();
+//         this.state = {
+//             count:0
+//         };
+//     };
 
-    _reset = () => {
-        if(this.state.count>0){
-            this.setState({count:0});
-        };
-    };
+//     _reset = () => {
+//         if(this.state.count>0){
+//             this.setState({count:0});
+//         };
+//     };
 
-    _update_count = (by=0) => {
-        if(by===0){
-            return;
-        };
-        this.setState((prv)=>{
-            return {
-                count:prv.count+by
-            }
-        });
-    }; 
+//     _update_count = (by=0) => {
+//         if(by===0){
+//             return;
+//         };
+//         this.setState((prv)=>{
+//             return {
+//                 count:prv.count+by
+//             }
+//         });
+//     }; 
 
-    render(){
-        if(this.state.count===0){
-            return null;
-        };
-        return (
-            <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.dot}>
-                <Text style={styles.dot_text}>{this.state.count>9?'9+':this.state.count}</Text>
-            </Animated.View>
-        )
-    };
-};
+//     render(){
+//         if(this.state.count===0){
+//             return null;
+//         };
+//         return (
+//             <Animated.View entering={FadeInDown} exiting={FadeOutDown} style={styles.dot}>
+//                 <Text style={styles.dot_text}>{this.state.count>9?'9+':this.state.count}</Text>
+//             </Animated.View>
+//         )
+//     };
+// };
 
 const styles = StyleSheet.create({
     stream_container:{
