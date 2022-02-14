@@ -61,18 +61,18 @@ class Chat extends React.PureComponent{
 
 
     // calling _set_local_stream_ in componentDidAppear to avoid framedrops when this screens shows up.
-    componentDidAppear(){   
-        if(!this._component_appeared_){
-            this._set_omegle_listners_();
-            this._start_();
-            this._component_appeared_ = true;
-        };
-    };
+    // componentDidAppear(){   
+    //     if(!this._component_appeared_){
+    //         this._set_omegle_listners_();
+    //         this._start_();
+    //         this._component_appeared_ = true;
+    //     };
+    // };
 
     componentDidMount(){
         this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
         // this._set_omegle_listners_();
-        // this._start_();
+        this._start_();
     }
 
     componentWillUnmount(){
@@ -84,8 +84,8 @@ class Chat extends React.PureComponent{
         try{
             // setting current user camera view before initializing Omegle
             !this.state._local_stream&&await this._set_local_stream_();
-            await this._set_peer_connection_();
-            await this._omegle_.start();
+            // await this._set_peer_connection_();
+            // await this._omegle_.start();
 
         }catch(e){
             console.log(e);
@@ -256,7 +256,6 @@ class Chat extends React.PureComponent{
     _reset_ = () => {
         return new Promise(async(resolve,reject)=>{
             try{
-                this._recived_ice_candidates_ = [];
                 this._has_rtc_call_happened_ = false;
                 this.setState({_remote_stream:null,_is_connected:false,_is_user_typing:false,_looking_for_someone:Boolean(this.props.autoroll)});
                 this._count_&&this._count_._reset();
@@ -267,6 +266,7 @@ class Chat extends React.PureComponent{
                 this._rtc_peer_connection_&&this._rtc_peer_connection_.close();
                 this._rtc_peer_connection_ = null;
                 this._tmp_ice_candidates_ = [];
+                this._recived_ice_candidates_ = [];
                 resolve();
             }catch(e){
                 console.log("Error in _reset_", e);
@@ -330,7 +330,7 @@ class Chat extends React.PureComponent{
                                         <Image source={require('../../assets/icons/camera.png')} resizeMode="contain" style={styles.camera}/>
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
+                                    <TouchableOpacity disabled={this.state._is_connected} onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
                                         <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
                                         <Image source={require('../../assets/icons/chat.png')} resizeMode="contain" style={styles.chat}/>
                                         <Count ref={this._set_count_ref_}/>
