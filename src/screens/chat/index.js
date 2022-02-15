@@ -1,5 +1,5 @@
 import React from 'react';
-import {View,StyleSheet, StatusBar, TouchableOpacity,Image,Text,BackHandler} from 'react-native';
+import {View,StyleSheet,StatusBar, TouchableOpacity,Image,Text,BackHandler} from 'react-native';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
 import fonts from '../../theme/fonts';
@@ -16,7 +16,8 @@ import TypingView from './_typing_view';
 import { open_sheet } from '../../navigations/flow/sheet';
 import { text_chat } from '../../navigations/constant';
 
-const status_bar_height = StatusBar.currentHeight;
+const status_bar_height = Navigation.constantsSync().statusBarHeight;
+console.log(status_bar_height);
 const icon_hitslop = {top:hp(2),bottom:hp(2),right:wp(5),left:wp(5)};
 
 const rtc_peer_configuration = {iceServers: [{urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']}],iceCandidatePoolSize: 10};
@@ -342,21 +343,23 @@ class Chat extends React.PureComponent{
                                         <Image source={require('../../assets/icons/camera.png')} resizeMode="contain" style={styles.camera}/>
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity disabled={!this.state._is_connected} onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
+                                    <TouchableOpacity disabled={this.state._is_connected} onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
                                         <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
                                         <Image source={require('../../assets/icons/chat.png')} resizeMode="contain" style={styles.chat}/>
                                         {/* <Count ref={this._set_count_ref_}/> */}
                                     </TouchableOpacity>
                             </View>
-                            
-                            {(this.state._is_connected||(!this.state._is_connected&&!this.props.autoroll))&&
-                            <Animated.View entering={SlideInRight} exiting={SlideOutRight}>
-                                <Bouncy onPress={this._next_} hitSlop={icon_hitslop}>
-                                    <View style={styles.btn}>
-                                            <Text style={styles.btn_text}>Next</Text>
-                                    </View>
-                                </Bouncy>
-                            </Animated.View>}
+
+                            <View>
+                                {(this.state._is_connected||(!this.state._is_connected&&!this.props.autoroll))&&
+                                <Animated.View  entering={SlideInRight} exiting={SlideOutRight}>
+                                    <Bouncy onPress={this._next_} hitSlop={icon_hitslop}>
+                                        <View style={styles.btn}>
+                                                <Text style={styles.btn_text}>Next</Text>
+                                        </View>
+                                    </Bouncy>
+                                </Animated.View>}
+                            </View>
                         </Animated.View>
                             
                     </View>
@@ -449,7 +452,7 @@ const styles = StyleSheet.create({
     stream_container:{
         width:'100%',
         flex:1,
-        backgroundColor:colors.black
+        backgroundColor:colors.dark
     },  
     local_stream:{
         height:hp(50)
@@ -501,6 +504,7 @@ const styles = StyleSheet.create({
         alignItems:'flex-end'
     },
     bottom_button_row:{
+        flex:1,
         flexDirection:'row'
     },
     icon_shadow:{

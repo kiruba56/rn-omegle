@@ -9,11 +9,22 @@ const to_chat = () => {
         component:{
             name:chat_screen,
             options:{
+                modal:{
+                    swipeToDismiss:false
+                },
+                modalPresentationStyle:'fullScreen',
                 animations:{
                     showModal:{
                         waitForRender:true,
-                        scaleX:animation_enter,
-                        scaleY:animation_enter
+                        enter:{
+                            scaleX:animation_enter,
+                            scaleY:animation_enter,
+                            alpha:{from:0,to:1,interpolation:{type:'linear'}}
+                        },
+                        exit:{
+                            alpha:{from:1,to:0,interpolation:{type:'linear'}}
+                        }
+                   
                     }
                 },
                 statusBar:{
@@ -39,9 +50,14 @@ const dismiss_chat = (id) => {
         animations:{
             dismissModal:{
                 waitForRender:true,
-                scaleX:animation_exit,
-                scaleY:animation_exit,
-                alpha:{to:0,interpolation:{type:'linear'}}
+                exit:{
+                    scaleX:animation_exit,
+                    scaleY:animation_exit,
+                    alpha:{to:0,interpolation:{type:'linear'}}
+                },
+                enter:{
+                    alpha:{from:0,to:1,interpolation:{type:'linear'}}
+                }
             }
         }
     })

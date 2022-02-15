@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import {View,StyleSheet,BackHandler,TextInput,Text,TouchableOpacity, Platform} from 'react-native';
+import {SafeAreaView,StyleSheet,BackHandler,TextInput,Text,TouchableOpacity, Platform,KeyboardAvoidingView} from 'react-native';
 import { hp, wp } from '../../utils/responsive';
 import ScrollBottomSheet from 'react-native-scroll-bottom-sheet';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -97,7 +97,11 @@ class TextChat extends React.PureComponent{
     _on_settle_ = (index) => {
         this._current_index_ = index;
         if(index===2){
+            this._input_&&this._input_.blur();
             this._close_();
+        };
+        if(index===1){
+            this._input_&&this._input_.blur();
         };
     };
 
@@ -138,7 +142,7 @@ class TextChat extends React.PureComponent{
 
     render(){
         return (
-            <View style={[default_styles.flex]}>
+            <SafeAreaView style={[default_styles.flex]}>
                 <Animated.View nativeID="sheet" style={[default_styles.flex,styles.align_end]}>
                      <ScrollBottomSheet
                         innerRef={this._set_sheet_inner_ref_}
@@ -157,18 +161,20 @@ class TextChat extends React.PureComponent{
                         contentContainerStyle={styles.content_container} 
                         />
 
-                        <View style={styles.footer_container}>
-                             <TextInput ref={this._set_input_ref_} onEndEditing={this._on_end_editing_} onChangeText={this._on_change_text_} multiline maxLength={100} placeholder="Enter message" onFocus={this._on_focus_} style={styles.text_input}/>
-                             {this.state._can_send&&
-                                <Animated.View entering={FadeIn} exiting={FadeOut}>
-                                    <TouchableOpacity onPress={this._on_send_}>
-                                        <Text style={styles.send}>Send</Text>
-                                    </TouchableOpacity>
-                                </Animated.View>}
-                        </View>
+                        <KeyboardAvoidingView style={Platform.OS==='android'&&styles.footer_container}  behavior={Platform.select({ios:"position",android:'height'})}  keyboardVerticalOffset={hp(6)} contentContainerStyle={Platform.OS==='ios'&&styles.footer_container}>
+                            {/* <View style={styles.footer_container}> */}
+                                <TextInput ref={this._set_input_ref_} onEndEditing={this._on_end_editing_} onChangeText={this._on_change_text_} multiline maxLength={100} placeholder="Enter message" onFocus={this._on_focus_} style={styles.text_input}/>
+                                {this.state._can_send&&
+                                    <Animated.View entering={FadeIn} exiting={FadeOut}>
+                                        <TouchableOpacity onPress={this._on_send_}>
+                                            <Text style={styles.send}>Send</Text>
+                                        </TouchableOpacity>
+                                    </Animated.View>}
+                            {/* </View> */}
+                        </KeyboardAvoidingView>
 
                 </Animated.View>
-            </View>
+            </SafeAreaView>
         );
     };
 };
