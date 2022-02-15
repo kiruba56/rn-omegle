@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState,memo } from 'react';
-import {View,StyleSheet,BackHandler,TouchableOpacity,Text} from 'react-native';
+import {View,StyleSheet,BackHandler,TouchableOpacity,Text,Platform} from 'react-native';
 import default_styles from '../../theme/default_styles';
 import ScrollBottomSheet from 'react-native-scroll-bottom-sheet';
 import { hp, wp } from '../../utils/responsive';
@@ -11,6 +11,7 @@ import fonts from '../../theme/fonts';
 import Bouncy from '../../components/bouncy';
 import { useDispatch } from 'react-redux';
 import { change_user_preference } from '../../db/redux/types';
+import useComponentDidAppear from '../../hooks/useComponentDidAppear';
 
 const snap_points= [hp(10),hp(110)];
 
@@ -38,12 +39,17 @@ const TopicPicker = ({componentId,selected=[]}) => {
     // creating inner ref to avoid a error in react-native-scroll-bottom-sheet
     const _set_inner_ref_ = ref=> {};
     const _sheet_ref_ = useRef(null);
-    const _delta_ = new Animated.Value(1);
+    const _delta_ = useRef(new Animated.Value(0));
 
     const back = () =>  {
         _sheet_ref_&&_sheet_ref_.current.snapTo(1);
         return true;
     };
+
+    Platform.OS==='ios'&&useComponentDidAppear(()=>{
+        _sheet_ref_&&_sheet_ref_.current.snapTo(0);
+    },componentId);
+
 
     useEffect(() => {
         // custom backhandler to support dismissing the model after closing the bottomsheet
@@ -75,9 +81,9 @@ const TopicPicker = ({componentId,selected=[]}) => {
 
     return (
         <View style={[default_styles.flex]}>
-            <Animated.View nativeID="background_end" style={[styles.background_fill,{opacity: _delta_.interpolate({inputRange:[0,1],outputRange:[0,.4]})}]} />
+            <Animated.View nativeID="background_end" style={[styles.background_fill,{opacity: _delta_.current.interpolate({inputRange:[0,1],outputRange:[0,.4]})}]} />
             <Animated.View nativeID="sheet_end" style={[default_styles.flex]}>
-                <ScrollBottomSheet innerRef={_set_inner_ref_} ref={_sheet_ref_} showsVerticalScrollIndicator={false} componentType="ScrollView" snapPoints={snap_points} initialSnapIndex={0} onSettle={_on_settle_} animatedPosition={_delta_} renderHandle={_render_handle_} contentContainerStyle={styles.content_container}>
+                <ScrollBottomSheet innerRef={_set_inner_ref_} ref={_sheet_ref_} showsVerticalScrollIndicator={false} componentType="ScrollView" snapPoints={snap_points} initialSnapIndex={Platform.select({ios:1,android:0})} onSettle={_on_settle_} animatedPosition={_delta_.current} renderHandle={_render_handle_} contentContainerStyle={styles.content_container}>
                     {topics.map(_render_topics_)}
                   
                 </ScrollBottomSheet>

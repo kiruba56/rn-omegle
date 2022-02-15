@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import colors from '../../theme/colors';
 import { hp } from '../../utils/responsive';
@@ -26,7 +27,7 @@ const open_sheet = (name,props={},prefix='') => {
                     backgroundColor:colors.bg
                 },
                 animations:{
-                    showModal:{
+                    showModal:Platform.OS==='ios'?undefined:{
                         elementTransitions:[
                             {
                                 id:'background'+prefix,
@@ -36,6 +37,7 @@ const open_sheet = (name,props={},prefix='') => {
                                 id:'sheet'+prefix,
                                 alpha:{from:0,interpolation},
                                 y:{from:hp(100),to:0,interpolation},
+                                
                             }
                         ],
                     }

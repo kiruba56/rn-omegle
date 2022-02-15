@@ -1,6 +1,6 @@
-import React,{useRef,useEffect,memo} from 'react';
-import {View,StyleSheet,BackHandler,Text,Image,TouchableOpacity} from 'react-native';
-import Animated, { Layout } from 'react-native-reanimated';
+import React,{useRef,useEffect,memo, useMemo} from 'react';
+import {View,StyleSheet,BackHandler,Text,Image,TouchableOpacity,Platform} from 'react-native';
+import Animated, {  Layout } from 'react-native-reanimated';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
 import ScrollBottomSheet from 'react-native-scroll-bottom-sheet';
@@ -14,6 +14,7 @@ import PanelHeader from './_panel_header';
 import { language_picker, topic_picker } from '../../navigations/constant';
 import { open_sheet } from '../../navigations/flow/sheet';
 import isEqual from 'lodash/isEqual';
+import useComponentDidAppear from '../../hooks/useComponentDidAppear';
 
 const snap_points= [hp(20),hp(40), hp(110)];
 const option_hitslip = {top:hp(2),bottom:hp(2)}
@@ -52,18 +53,25 @@ const Settings = ({componentId}) =>{
     // creating inner ref to avoid a error in react-native-scroll-bottom-sheet
     const _set_inner_ref_ = ref=> {};
     const _sheet_ref_ = useRef(null);
-    const _delta_ = new Animated.Value(1);
+    const _delta_ = useRef(new Animated.Value(0));
 
     const user = useSelector(state=>state.app.user);
     const dispatch = useDispatch()
 
 
+    Platform.OS==='ios'&&useComponentDidAppear(()=>{
+        _sheet_ref_&&_sheet_ref_.current.snapTo(1);
+    },componentId);
+
+
     useEffect(() => {
+        console.log("called");
         // custom backhandler to support dismissing the model after closing the bottomsheet
         const back = () =>  {
             _sheet_ref_&&_sheet_ref_.current.snapTo(2);
             return true;
         }
+     
         const back_handler = BackHandler.addEventListener("hardwareBackPress",back);
         return () => back_handler.remove();
     }, []);
@@ -95,9 +103,9 @@ const Settings = ({componentId}) =>{
 
     return (
         <View style={[default_styles.flex]}>
-            <Animated.View nativeID="background" style={[styles.background_fill,{opacity: _delta_.interpolate({inputRange:[0,1],outputRange:[0,.4]})}]} />
+            <Animated.View  nativeID="background" style={[styles.background_fill,{opacity: _delta_.current.interpolate({inputRange:[0,1],outputRange:[0,.4]})}]} />
             <Animated.View nativeID="sheet" style={[default_styles.flex]}>
-                <ScrollBottomSheet innerRef={_set_inner_ref_} ref={_sheet_ref_} showsVerticalScrollIndicator={false} componentType="ScrollView" snapPoints={snap_points} initialSnapIndex={1} onSettle={_on_settle_} animatedPosition={_delta_} renderHandle={_render_handle_} contentContainerStyle={styles.content_container}>
+                <ScrollBottomSheet innerRef={_set_inner_ref_} ref={_sheet_ref_} showsVerticalScrollIndicator={false} componentType="ScrollView" snapPoints={snap_points} initialSnapIndex={Platform.select({ios:2,android:1})} onSettle={_on_settle_} animatedPosition={_delta_.current} renderHandle={_render_handle_} contentContainerStyle={styles.content_container}>
                      {setting_fields.map(_render_fields_)}
                 </ScrollBottomSheet>
             </Animated.View>

@@ -71,8 +71,8 @@ class Chat extends React.PureComponent{
 
     componentDidMount(){
         this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
-        this._set_omegle_listners_();
-        this._start_();
+        // this._set_omegle_listners_();
+        // this._start_();
     }
 
     componentWillUnmount(){

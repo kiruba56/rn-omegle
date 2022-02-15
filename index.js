@@ -15,7 +15,7 @@ Navigation.registerComponent(home_screen, () => wrapper(require('./src/screens/h
 
 
 
-// LogBox.ignoreAllLogs();
+LogBox.ignoreAllLogs();
 
 Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.allowFontScaling = false;

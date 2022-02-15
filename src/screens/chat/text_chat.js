@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import {View,StyleSheet,BackHandler,TextInput,Text,TouchableOpacity} from 'react-native';
+import {View,StyleSheet,BackHandler,TextInput,Text,TouchableOpacity, Platform} from 'react-native';
 import { hp, wp } from '../../utils/responsive';
 import ScrollBottomSheet from 'react-native-scroll-bottom-sheet';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -32,6 +32,9 @@ class TextChat extends React.PureComponent{
 
 
     componentDidAppear(){
+        if(Platform.OS==='ios'){
+            this._sheet_&&this._sheet_.snapTo(0);
+        };          
         this._sheet_inner_&&this._sheet_inner_.scrollToEnd();
     };  
 
@@ -146,7 +149,7 @@ class TextChat extends React.PureComponent{
                         renderItem={this._render_chats_}
                         ListFooterComponent={this._render_footer_}
                         keyExtractor={this._key_}
-                        initialSnapIndex={0}
+                        initialSnapIndex={Platform.select({ios:2,android:0})}
                         onSettle={this._on_settle_}
                         renderHandle={this._render_handle_}
                         initialNumToRender={10}

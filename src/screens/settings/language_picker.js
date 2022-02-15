@@ -1,5 +1,5 @@
 import React,{memo, useEffect,useRef} from 'react';
-import {View,StyleSheet,BackHandler,Text,Image} from 'react-native';
+import {View,StyleSheet,BackHandler,Text,Image,Platform,TouchableOpacity as RN_TOUCHABLE} from 'react-native';
 import Animated from 'react-native-reanimated';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
@@ -9,20 +9,27 @@ import PanelHeader from './_panel_header';
 import { Navigation } from 'react-native-navigation';
 import languages from '../../utils/language_list.json';
 import fonts from '../../theme/fonts';
-import {TouchableOpacity} from 'react-native-gesture-handler';
+import {TouchableOpacity as RNGH_TOUCHABLE} from 'react-native-gesture-handler';
 import { useDispatch } from 'react-redux';
 import { change_user_preference } from '../../db/redux/types';
+import useComponentDidAppear from '../../hooks/useComponentDidAppear';
 
 const snap_points= [hp(10),hp(110)];
 const item_height = wp(17);
+
+const Touchable = Platform.OS==='ios'?RN_TOUCHABLE:RNGH_TOUCHABLE;
 
 const LanguagePicker = ({componentId,selected={id:'en'}}) => {
   // creating inner ref to avoid a error in react-native-scroll-bottom-sheet
     const _set_inner_ref_ = ref=> {};
     const _sheet_ref_ = useRef(null);
-    const _delta_ = new Animated.Value(1);
+    const _delta_ = useRef(new Animated.Value(0));
 
     const dispatch = useDispatch();
+
+    Platform.OS==='ios'&&useComponentDidAppear(()=>{
+        _sheet_ref_&&_sheet_ref_.current.snapTo(0);
+    },componentId);
 
     useEffect(() => {
         // custom backhandler to support dismissing the model after closing the bottomsheet
@@ -79,16 +86,16 @@ const LanguagePicker = ({componentId,selected={id:'en'}}) => {
     };   
     return (
         <View nativeID='cover' style={[default_styles.flex]}>
-              <Animated.View nativeID="background_end" style={[styles.background_fill,{opacity: _delta_.interpolate({inputRange:[0,1],outputRange:[0,.4]})}]} />
+              <Animated.View nativeID="background_end" style={[styles.background_fill,{opacity: _delta_.current.interpolate({inputRange:[0,1],outputRange:[0,.4]})}]} />
               <View nativeID='sheet_end' style={default_styles.flex}>
                 <ScrollBottomSheet
                     innerRef={_set_inner_ref_}
                     ref={_sheet_ref_}
                     componentType="FlatList"
                     snapPoints={snap_points}
-                    initialSnapIndex={0}
+                    initialSnapIndex={Platform.select({ios:1,android:0})}
                     onSettle={_on_settle_}
-                    animatedPosition={_delta_}
+                    animatedPosition={_delta_.current}
                     renderHandle={_render_handle_}
                     contentContainerStyle={styles.content_container} 
                     data={languages}    
@@ -108,13 +115,13 @@ const Language = memo(({id,selected,name,native_name,onPress}) => {
         onPress&&onPress({id,name})
     };
     return (
-        <TouchableOpacity onPress={_on_press_} style={styles.row_container}>
+        <Touchable onPress={_on_press_} style={styles.row_container}>
             <View>
                 <Text style={[styles.title,selected?styles.selected_effect:{}]}>{name}</Text>
                 {native_name?<Text style={[styles.sub_title,selected?styles.selected_effect:{}]}>{native_name}</Text>:null}
             </View>
-        {selected?<Image resizeMode="contain" style={styles.tick} source={require('../../assets/icons/tick.png')}/>:null}
-     </TouchableOpacity>
+            {selected?<Image resizeMode="contain" style={styles.tick} source={require('../../assets/icons/tick.png')}/>:null}
+        </Touchable>
     )
 },()=>true);
 

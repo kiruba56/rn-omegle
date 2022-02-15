@@ -9,7 +9,7 @@ import fonts from '../../theme/fonts';
 import { hp, wp } from '../../utils/responsive';
 import { settings_screen } from '../../navigations/constant';
 
-const Home = () => {
+const Home = ({componentId}) => {
 
     const _on_settings_ = () => open_sheet(settings_screen);
 
