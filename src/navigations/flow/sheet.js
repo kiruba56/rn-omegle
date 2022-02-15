@@ -31,7 +31,7 @@ const open_sheet = (name,props={},prefix='') => {
                         elementTransitions:[
                             {
                                 id:'background'+prefix,
-                                alpha:{from:0,to:.26,interpolation}
+                                alpha:{from:0,to:.4,interpolation}
                             },
                             {
                                 id:'sheet'+prefix,

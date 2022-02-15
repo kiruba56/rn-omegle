@@ -23,7 +23,7 @@ const LanguagePicker = ({componentId,selected={id:'en'}}) => {
   // creating inner ref to avoid a error in react-native-scroll-bottom-sheet
     const _set_inner_ref_ = ref=> {};
     const _sheet_ref_ = useRef(null);
-    const _delta_ = useRef(new Animated.Value(0));
+    const _delta_ = useRef(new Animated.Value(Platform.OS==='android'));
 
     const dispatch = useDispatch();
 

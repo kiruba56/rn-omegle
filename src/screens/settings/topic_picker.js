@@ -39,7 +39,7 @@ const TopicPicker = ({componentId,selected=[]}) => {
     // creating inner ref to avoid a error in react-native-scroll-bottom-sheet
     const _set_inner_ref_ = ref=> {};
     const _sheet_ref_ = useRef(null);
-    const _delta_ = useRef(new Animated.Value(0));
+    const _delta_ = useRef(new Animated.Value(Platform.OS==='android'));
 
     const back = () =>  {
         _sheet_ref_&&_sheet_ref_.current.snapTo(1);
