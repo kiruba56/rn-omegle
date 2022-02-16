@@ -1,6 +1,11 @@
 
 # Omegle client written in React Native
 **NOTE: This a fun and experimental project. Its not tested for edge case scenerios.**
+## Demo
+
+Insert gif
+
+
 ## Run Locally
 
 Clone the project
