@@ -31,12 +31,13 @@ const LanguagePicker = ({componentId,selected={id:'en'}}) => {
         _sheet_ref_&&_sheet_ref_.current.snapTo(0);
     },componentId);
 
+    const back = () =>  {
+        _sheet_ref_&&_sheet_ref_.current.snapTo(1);
+        return true;
+    }
+
     useEffect(() => {
         // custom backhandler to support dismissing the model after closing the bottomsheet
-        const back = () =>  {
-            _sheet_ref_&&_sheet_ref_.current.snapTo(1);
-            return true;
-        }
         const back_handler = BackHandler.addEventListener("hardwareBackPress",back);
         return () => back_handler.remove();
     }, []);
@@ -72,7 +73,7 @@ const LanguagePicker = ({componentId,selected={id:'en'}}) => {
             if(value.id!==selected.id){
                 dispatch({type:change_user_preference,payload:{field:'language',value}});
             };
-            _close_();
+            back();
         });
     };  
 

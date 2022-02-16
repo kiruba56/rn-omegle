@@ -53,7 +53,7 @@ const Settings = ({componentId}) =>{
     // creating inner ref to avoid a error in react-native-scroll-bottom-sheet
     const _set_inner_ref_ = ref=> {};
     const _sheet_ref_ = useRef(null);
-    const _delta_ = useRef(new Animated.Value(0));
+    const _delta_ = useRef(new Animated.Value(1));
 
     const user = useSelector(state=>state.app.user);
     const dispatch = useDispatch()

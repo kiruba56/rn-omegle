@@ -34,6 +34,17 @@ static void InitializeFlipper(UIApplication *application) {
   RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
 [ReactNativeNavigation bootstrapWithBridge:bridge];
   
+//  for (NSString* family in [UIFont familyNames])
+//  {
+//      NSLog(@"%@", family);
+//
+//      for (NSString* name in [UIFont fontNamesForFamilyName: family])
+//      {
+//          NSLog(@"Family name:  %@", name);
+//      }
+//  }
+//
+//  
 
   return YES;
 }

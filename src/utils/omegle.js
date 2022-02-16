@@ -4,7 +4,6 @@ import EventEmitter from 'events';
 import UserAgent from 'react-native-user-agent';
 import format from 'date-fns/format';
 
-
 const events = [
     // status events
     'waiting','connected','statusInfo','count',
@@ -283,6 +282,7 @@ class Omegle extends EventEmitter{
                 const [name, payload] =  [v[0],v[1]||null];
                 this.handle_event(name,payload);
                 // only emit events that we may need 
+                // console.log(name, payload);
                 events.includes(name)&&this.emit(name,payload);
             });
         }catch(e){

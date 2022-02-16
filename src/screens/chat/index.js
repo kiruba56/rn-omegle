@@ -17,7 +17,6 @@ import { open_sheet } from '../../navigations/flow/sheet';
 import { text_chat } from '../../navigations/constant';
 
 const status_bar_height = Navigation.constantsSync().statusBarHeight;
-console.log(status_bar_height);
 const icon_hitslop = {top:hp(2),bottom:hp(2),right:wp(5),left:wp(5)};
 
 const rtc_peer_configuration = {iceServers: [{urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']}],iceCandidatePoolSize: 10};
@@ -72,8 +71,8 @@ class Chat extends React.PureComponent{
 
     componentDidMount(){
         this._back_handler_ = BackHandler.addEventListener("hardwareBackPress",this._close_);
-        // this._set_omegle_listners_();
-        // this._start_();
+        this._set_omegle_listners_();
+        this._start_();
     }
 
     componentWillUnmount(){
@@ -115,7 +114,7 @@ class Chat extends React.PureComponent{
         });
 
         this._omegle_.on('error',e=>{
-            console.log(e);
+            console.log("error ls",e);
             this._omegle_.start();
         });
 
@@ -343,7 +342,7 @@ class Chat extends React.PureComponent{
                                         <Image source={require('../../assets/icons/camera.png')} resizeMode="contain" style={styles.camera}/>
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity disabled={this.state._is_connected} onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
+                                    <TouchableOpacity disabled={!this.state._is_connected} onPress={this._on_chat_} style={[styles.icon_container,styles.chat_aligner]} hitSlop={icon_hitslop}>
                                         <Image source={require('../../assets/icons/back_drop.png')} resizeMode="cover" style={[styles.shadow,styles.icon_shadow]} />
                                         <Image source={require('../../assets/icons/chat.png')} resizeMode="contain" style={styles.chat}/>
                                         {/* <Count ref={this._set_count_ref_}/> */}
