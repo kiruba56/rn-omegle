@@ -3,7 +3,17 @@
 **NOTE: This a fun project created to experiment with Omegle's WebRTC video streaming. Its not tested for edge case scenerios.**
 ## Demo
 
-Insert gif
+
+
+|<video autoPlay src="https://user-images.githubusercontent.com/45106700/154292965-1f805f26-cd62-410a-9119-1cdde99968a9.mp4"></video> | <img src="https://user-images.githubusercontent.com/45106700/154265624-ace63c44-43e5-43f8-bea5-ddfc43c46f80.gif" width="40%">|
+| :-------- | :------- |
+
+<!-- <video autoPlay src="https://user-images.githubusercontent.com/45106700/154292965-1f805f26-cd62-410a-9119-1cdde99968a9.mp4">
+</video>
+<img src="https://user-images.githubusercontent.com/45106700/154265624-ace63c44-43e5-43f8-bea5-ddfc43c46f80.gif" >
+
+ -->
+
 
 
 ## Run Locally
