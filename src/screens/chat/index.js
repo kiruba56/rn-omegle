@@ -1,5 +1,5 @@
 import React from 'react';
-import {View,StyleSheet,StatusBar, TouchableOpacity,Image,Text,BackHandler} from 'react-native';
+import {View,StyleSheet, TouchableOpacity,Image,Text,BackHandler} from 'react-native';
 import colors from '../../theme/colors';
 import default_styles from '../../theme/default_styles';
 import fonts from '../../theme/fonts';
