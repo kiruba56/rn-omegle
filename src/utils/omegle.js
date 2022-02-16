@@ -4,6 +4,8 @@ import EventEmitter from 'events';
 import UserAgent from 'react-native-user-agent';
 import format from 'date-fns/format';
 
+
+
 const events = [
     // status events
     'waiting','connected','statusInfo','count',

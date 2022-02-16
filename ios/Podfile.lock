@@ -356,8 +356,6 @@ PODS:
     - React-jsi (= 0.67.2)
     - React-logger (= 0.67.2)
     - React-perflogger (= 0.67.2)
-  - ReactNativeIncallManager (3.3.0):
-    - React
   - ReactNativeNavigation (7.25.3):
     - HMSegmentedControl
     - React-Core
@@ -466,7 +464,6 @@ DEPENDENCIES:
   - React-RCTVibration (from `../node_modules/react-native/Libraries/Vibration`)
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
-  - ReactNativeIncallManager (from `../node_modules/react-native-incall-manager`)
   - ReactNativeNavigation (from `../node_modules/react-native-navigation`)
   - ReactNativeUiLib (from `../node_modules/react-native-ui-lib/lib`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
@@ -566,8 +563,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/runtimeexecutor"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
-  ReactNativeIncallManager:
-    :path: "../node_modules/react-native-incall-manager"
   ReactNativeNavigation:
     :path: "../node_modules/react-native-navigation"
   ReactNativeUiLib:
@@ -632,7 +627,6 @@ SPEC CHECKSUMS:
   React-RCTVibration: 99c7f67fba7a5ade46e98e870c6ff2444484f995
   React-runtimeexecutor: 2450b43df7ffe8e805a0b3dcb2abd4282f1f1836
   ReactCommon: d98c6c96b567f9b3a15f9fd4cc302c1eda8e3cf2
-  ReactNativeIncallManager: a840ef75640518065742a893e6c6ff98ee820039
   ReactNativeNavigation: 81628d0bac0c0d214d13f08bcd1721879ba70da7
   ReactNativeUiLib: cde7263a7d308b60161cd286f95c9433e79f2f7d
   RNGestureHandler: bf572f552ea324acd5b5464b8d30755b2d8c1de6
